@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.sharehome.share_study.mapper.CollegeMapper">
+    <resultMap id="BaseResultMap" type="top.sharehome.share_study.model.entity.College">
+        <!--@mbg.generated-->
+        <!--@Table share_study.t_college-->
+        <id column="college_id" jdbcType="BIGINT" property="id"/>
+        <result column="college_name" jdbcType="VARCHAR" property="name"/>
+        <result column="college_belong" jdbcType="VARCHAR" property="belong"/>
+        <result column="college_address" jdbcType="VARCHAR" property="address"/>
+        <result column="college_code" jdbcType="VARCHAR" property="code"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+        <result column="is_deleted" jdbcType="TINYINT" property="isDeleted"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        <!--@mbg.generated-->
+        college_id,
+        college_name,
+        college_belong,
+        college_address,
+        college_code,
+        create_time,
+        update_time,
+        is_deleted
+    </sql>
+</mapper>

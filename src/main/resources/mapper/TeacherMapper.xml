@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.sharehome.share_study.mapper.TeacherMapper">
+    <resultMap id="BaseResultMap" type="top.sharehome.share_study.model.entity.Teacher">
+        <!--@mbg.generated-->
+        <!--@Table share_study.t_teacher-->
+        <id column="teacher_id" jdbcType="BIGINT" property="id"/>
+        <result column="teacher_account" jdbcType="VARCHAR" property="account"/>
+        <result column="teacher_password" jdbcType="VARCHAR" property="password"/>
+        <result column="teacher_name" jdbcType="VARCHAR" property="name"/>
+        <result column="teacher_avatar" jdbcType="VARCHAR" property="avatar"/>
+        <result column="teacher_gender" jdbcType="TINYINT" property="gender"/>
+        <result column="teacher_belong" jdbcType="BIGINT" property="belong"/>
+        <result column="teacher_score" jdbcType="BIGINT" property="score"/>
+        <result column="teacher_email" jdbcType="VARCHAR" property="email"/>
+        <result column="teacher_message_total" jdbcType="BIGINT" property="messageTotal"/>
+        <result column="teacher_message_read" jdbcType="BIGINT" property="messageRead"/>
+        <result column="teacher_status" jdbcType="TINYINT" property="status"/>
+        <result column="teacher_role" jdbcType="TINYINT" property="role"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+        <result column="is_deleted" jdbcType="TINYINT" property="isDeleted"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        <!--@mbg.generated-->
+        teacher_id,
+        teacher_account,
+        teacher_password,
+        teacher_name,
+        teacher_avatar,
+        teacher_gender,
+        teacher_belong,
+        teacher_score,
+        teacher_email,
+        teacher_message_total,
+        teacher_message_read,
+        teacher_status,
+        teacher_role,
+        create_time,
+        update_time,
+        is_deleted
+    </sql>
+</mapper>
