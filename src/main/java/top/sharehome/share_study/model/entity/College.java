@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * 高校表
@@ -48,14 +48,14 @@ public class College implements Serializable {
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "高校录入时间")
-    private LocalDateTime createTime;
+    private Date createTime;
 
     /**
      * 高校更新时间
      */
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     @ApiModelProperty(value = "高校更新时间")
-    private LocalDateTime updateTime;
+    private Date updateTime;
 
     /**
      * 逻辑删除（0表示未删除，1表示已删除）

@@ -120,14 +120,14 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "教师录入时间")
-    private LocalDateTime createTime;
+    private Date createTime;
 
     /**
      * 教师修改时间
      */
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     @ApiModelProperty(value = "教师修改时间")
-    private LocalDateTime updateTime;
+    private Date updateTime;
 
     /**
      * 逻辑删除（0表示未删除，1表示已删除）

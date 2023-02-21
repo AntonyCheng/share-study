@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * 评论交流表
@@ -77,14 +78,14 @@ public class Comment implements Serializable {
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "评论发布时间")
-    private LocalDateTime createTime;
+    private Date createTime;
 
     /**
      * 评论更新时间
      */
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     @ApiModelProperty(value = "评论更新时间")
-    private LocalDateTime updateTime;
+    private Date updateTime;
 
     /**
      * 逻辑删除（0表示未删除，1表示已删除）

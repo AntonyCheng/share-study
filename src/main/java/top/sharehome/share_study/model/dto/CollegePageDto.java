@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * 高校回显对象
@@ -37,5 +38,5 @@ public class CollegePageDto {
     /**
      * 高校录入时间
      */
-    private LocalDateTime createTime;
+    private Date createTime;
 }

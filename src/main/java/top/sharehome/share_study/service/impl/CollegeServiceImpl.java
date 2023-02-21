@@ -1,20 +1,20 @@
 package top.sharehome.share_study.service.impl;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
-
+import com.alibaba.excel.EasyExcelFactory;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.sun.deploy.net.URLEncoder;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import top.sharehome.share_study.common.exception_handler.customize.CustomizeFileException;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeTransactionException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
+import top.sharehome.share_study.listener.CollegeExcelListener;
 import top.sharehome.share_study.mapper.CollegeMapper;
 import top.sharehome.share_study.mapper.TeacherMapper;
 import top.sharehome.share_study.model.dto.CollegeGetDto;
@@ -27,6 +27,11 @@ import top.sharehome.share_study.model.vo.CollegeUpdateVo;
 import top.sharehome.share_study.service.CollegeService;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 高校ServiceImpl
@@ -40,6 +45,9 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
 
     @Resource
     private TeacherMapper teacherMapper;
+
+    @Resource
+    private CollegeExcelListener collegeExcelListener;
 
     @Override
     @Transactional(rollbackFor = CustomizeReturnException.class)
@@ -176,4 +184,32 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
         });
         this.removeBatchByIds(ids);
     }
+
+    @Override
+    public void download(HttpServletResponse response) {
+        try {
+            // 设置下载信息
+            response.setContentType("application/vnd.ms-excel");
+            response.setCharacterEncoding("utf-8");
+            // 这里URLEncoder.encode可以防止中文乱码 当然和easyexcel没有关系
+            String fileName = URLEncoder.encode("高校信息", "UTF-8").replaceAll("\\+", "%20");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
+            // 查询课程分类表所有的数据
+            List<College> subjectList = collegeMapper.selectList(null);
+            // 将subjectList转变成subjectEeVoList
+            List<College> subjectEeVoList = subjectList.stream().map(subject -> {
+                College subjectEeVo = new College();
+                BeanUtils.copyProperties(subject, subjectEeVo);
+                return subjectEeVo;
+            }).collect(Collectors.toList());
+            EasyExcelFactory.write(response.getOutputStream(), College.class)
+                    .sheet("高校数据数据")
+                    .doWrite(subjectEeVoList);
+        } catch (UnsupportedEncodingException e) {
+            throw new CustomizeFileException(R.failure(RCodeEnum.EXCEL_EXPORT_FAILED), "导出Excel时文件编码异常");
+        } catch (IOException e) {
+            throw new CustomizeFileException(R.failure(RCodeEnum.EXCEL_EXPORT_FAILED), "文件写入时，响应流发生异常");
+        }
+    }
+
 }

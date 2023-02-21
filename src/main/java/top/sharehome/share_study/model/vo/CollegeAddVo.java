@@ -1,12 +1,9 @@
 package top.sharehome.share_study.model.vo;
 
-import com.baomidou.mybatisplus.annotation.TableField;
 import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import top.sharehome.share_study.model.entity.College;
 
 import java.io.Serializable;
 
@@ -29,5 +26,6 @@ public class CollegeAddVo implements Serializable {
      * 院校代码
      */
     private String code;
+
     private static final long serialVersionUID = 401511380398574226L;
 }

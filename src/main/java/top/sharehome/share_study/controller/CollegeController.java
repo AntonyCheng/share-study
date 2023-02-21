@@ -5,10 +5,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import io.swagger.models.auth.In;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
@@ -20,6 +20,7 @@ import top.sharehome.share_study.model.vo.CollegeUpdateVo;
 import top.sharehome.share_study.service.CollegeService;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 /**
@@ -157,5 +158,16 @@ public class CollegeController {
         Page<CollegePageDto> page = collegeService.pageCollege(current, pageSize, collegePageVo);
 
         return R.success(page, "分页查询成功");
+    }
+
+    /**
+     * 高校信息导出
+     *
+     * @param response 响应
+     */
+    @ApiOperation("高校信息Excel导出")
+    @GetMapping("/download")
+    public void download(HttpServletResponse response) {
+        collegeService.download(response);
     }
 }

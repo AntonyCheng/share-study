@@ -111,7 +111,6 @@ public class TeacherController {
         }
 
         // 判断
-
         teacherService.register(teacherRegisterVo);
 
         return R.success("注册成功");

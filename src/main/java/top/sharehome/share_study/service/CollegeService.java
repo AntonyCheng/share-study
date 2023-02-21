@@ -2,6 +2,7 @@ package top.sharehome.share_study.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import org.springframework.web.multipart.MultipartFile;
 import top.sharehome.share_study.model.dto.CollegeGetDto;
 import top.sharehome.share_study.model.dto.CollegePageDto;
 import top.sharehome.share_study.model.entity.College;
@@ -9,6 +10,7 @@ import top.sharehome.share_study.model.vo.CollegeAddVo;
 import top.sharehome.share_study.model.vo.CollegePageVo;
 import top.sharehome.share_study.model.vo.CollegeUpdateVo;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 /**
@@ -63,4 +65,11 @@ public interface CollegeService extends IService<College> {
      * @param ids 需要批量删除的高校id
      */
     void deleteBath(List<Long> ids);
+
+    /**
+     * 高校信息导出
+     *
+     * @param response 响应
+     */
+    void download(HttpServletResponse response);
 }
