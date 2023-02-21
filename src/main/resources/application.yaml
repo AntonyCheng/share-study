@@ -47,7 +47,7 @@ mybatis-plus:
 tencent:
   cos:
     file:
-      region: ap-chengdu
-      secret-id: AKIDGRSJyVuAJKCVccWHNVaWHsPq9HE5e4JN
-      secret-key: 0wiIiS0OnI8lHrJaeMuFOhwnU6hArTzW
-      bucket-name: sharestudy-1306588126
+      region: 
+      secret-id: 
+      secret-key: 
+      bucket-name: 
