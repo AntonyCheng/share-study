@@ -199,6 +199,36 @@ public enum RCodeEnum {
     OSS_DELETES_OBJECTS_EXCEPTIONALLY("D0109", "OSS删除对象异常"),
 
     /**
+     * 姓名校验失败 D0110
+     */
+    NAME_FORMAT_VERIFICATION_FAILED("D0110", "姓名校验失败"),
+
+    /**
+     * 高校名称/代码已经存在 D0111
+     */
+   COLLEGE_ALREADY_EXISTS("D0111", "高校名称/代码已经存在"),
+
+    /**
+     * 未登录 D0112
+     */
+    NOT_LOGIN("D0112", "未登录"),
+
+    /**
+     * 高校不存在 D0113
+     */
+    COLLEGE_NOT_EXISTS("D0113", "高校不存在"),
+
+    /**
+     * 高校下还绑定着用户 D0114
+     */
+    COLLEGE_BIND_USER("D0114", "高校下还绑定着用户"),
+
+    /**
+     * 修改前后数据没发生任何变化 D0115
+     */
+    DATA_HAS_NOT_CHANGED_BEFORE_THE_MODIFICATION("D0115", "修改前后数据没发生任何变化"),
+
+    /**
      * 系统未知异常 Z0000
      */
     SYSTEM_UNKNOWN_EXCEPTION("Z0000", "系统未知异常");

@@ -30,6 +30,11 @@ public class TeacherLoginDto implements Serializable {
     private String account;
 
     /**
+     * 教师姓名
+     */
+    private String name;
+
+    /**
      * 教师头像地址
      */
     private String avatar;
@@ -37,7 +42,7 @@ public class TeacherLoginDto implements Serializable {
     /**
      * 教师性别（0表示男性，1表示女性）
      */
-    private Integer gender;
+    private String gender;
 
     /**
      * 所属高校
@@ -55,7 +60,7 @@ public class TeacherLoginDto implements Serializable {
     private Long messageNumber;
 
     /**
-     * 用户角色（普通用户，管理员用户，超级管理员）
+     * 用户角色（0普通用户，1管理员用户，2超级管理员）
      */
-    private String roleName;
+    private Integer role;
 }

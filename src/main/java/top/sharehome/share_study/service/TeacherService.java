@@ -21,8 +21,18 @@ public interface TeacherService extends IService<Teacher> {
     void register(TeacherRegisterVo teacherRegisterVo);
 
     /**
-     * 登录业务方法
+     * 普通用户登录业务方法
+     *
      * @param teacherLoginVo 老师登录传来的账号密码
+     * @param request 为了设置登陆状态
      */
     void login(TeacherLoginVo teacherLoginVo, HttpServletRequest request);
+
+    /**
+     * 管理员登录业务方法
+     *
+     * @param teacherLoginVo 管理员登录传来的账号密码
+     * @param request 为了设置登录状态
+     */
+    void adminLogin(TeacherLoginVo teacherLoginVo, HttpServletRequest request);
 }

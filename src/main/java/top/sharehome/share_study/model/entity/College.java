@@ -37,20 +37,6 @@ public class College implements Serializable {
     private String name;
 
     /**
-     * 所属上级
-     */
-    @TableField(value = "college_belong")
-    @ApiModelProperty(value = "所属上级")
-    private String belong;
-
-    /**
-     * 高校地址
-     */
-    @TableField(value = "college_address")
-    @ApiModelProperty(value = "高校地址")
-    private String address;
-
-    /**
      * 院校代码
      */
     @TableField(value = "college_code")
@@ -82,10 +68,6 @@ public class College implements Serializable {
     public static final String COL_COLLEGE_ID = "college_id";
 
     public static final String COL_COLLEGE_NAME = "college_name";
-
-    public static final String COL_COLLEGE_BELONG = "college_belong";
-
-    public static final String COL_COLLEGE_ADDRESS = "college_address";
 
     public static final String COL_COLLEGE_CODE = "college_code";
 

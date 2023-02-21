@@ -11,7 +11,7 @@
  Target Server Version : 80028
  File Encoding         : 65001
 
- Date: 21/02/2023 01:01:57
+ Date: 22/02/2023 01:19:48
 */
 
 SET NAMES utf8mb4;
@@ -24,8 +24,6 @@ DROP TABLE IF EXISTS `t_college`;
 CREATE TABLE `t_college`  (
   `college_id` bigint NOT NULL COMMENT '高校唯一ID',
   `college_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '高校名称',
-  `college_belong` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '所属上级',
-  `college_address` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '高校地址',
   `college_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '院校代码',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '高校录入时间',
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '高校更新时间',
@@ -38,6 +36,8 @@ CREATE TABLE `t_college`  (
 -- ----------------------------
 -- Records of t_college
 -- ----------------------------
+INSERT INTO `t_college` VALUES (1627965942293053441, '哈尔滨商业大学', '10240', '2023-02-21 17:38:21', '2023-02-22 01:18:22', 0);
+INSERT INTO `t_college` VALUES (1628076603207450626, '北京大学', '10001', '2023-02-22 00:58:05', '2023-02-22 01:18:22', 0);
 
 -- ----------------------------
 -- Table structure for t_comment
@@ -112,6 +112,7 @@ CREATE TABLE `t_teacher`  (
 -- ----------------------------
 -- Records of t_teacher
 -- ----------------------------
-INSERT INTO `t_teacher` VALUES (1627705621900886018, 'admin', '605c8beea36f63abeec7b55e06ebaecf', 'Admin', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/super_avatar.jpg', 0, 0, '199999999@qq.com', 0, 0, 0, 0, 2, '2023-02-21 00:23:56', '2023-02-21 00:24:27', 0);
+INSERT INTO `t_teacher` VALUES (1627705621900886018, 'admin', '605c8beea36f63abeec7b55e06ebaecf', '伍程成', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/super_avatar.jpg', 0, 1627965942293053441, 'Admin@admin.com', 0, 0, 0, 0, 2, '2023-02-21 00:23:56', '2023-02-21 17:38:41', 0);
+INSERT INTO `t_teacher` VALUES (1627964699256537090, 'test', '7137fcb1c6a440365676694dce1bbafe', '伍程成', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/super_avatar.jpg', 0, 1627965942293053441, 'Test@test.com', 0, 0, 0, 0, 0, '2023-02-21 17:33:25', '2023-02-21 17:38:41', 0);
 
 SET FOREIGN_KEY_CHECKS = 1;

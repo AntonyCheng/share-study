@@ -2,7 +2,6 @@ package top.sharehome.share_study.controller;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.apache.ibatis.annotations.Delete;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
@@ -16,7 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * OSS文件上传/下载功能相关接口
+ * OSS功能相关接口
  *
  * @author AntonyCheng
  */
@@ -74,7 +73,7 @@ public class FileOssController {
      * @param file 用户上传的文件
      * @return 返回上传信息
      */
-    @ApiOperation("头像文件上传")
+    @ApiOperation("其他文件上传")
     @PostMapping("/oss_file_upload")
     public R<String> fileUpload(MultipartFile file) {
         if (file == null) {

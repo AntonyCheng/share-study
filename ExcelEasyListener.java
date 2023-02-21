@@ -11,9 +11,9 @@ import top.sharehome.ggkt.vod.mapper.SubjectMapper;
 import javax.annotation.Resource;
 
 /**
- * @Description
- * @Author:AntonyCheng
- * @CreateTime:2023/2/20 02:07
+ * EasyExcel监听类
+ *
+ * @author AntonyCheng
  */
 @Component
 public class SubjectListener extends AnalysisEventListener<SubjectEeVo> {

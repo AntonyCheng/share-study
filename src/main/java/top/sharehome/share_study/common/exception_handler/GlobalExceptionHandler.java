@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeFileException;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeTransactionException;
@@ -30,8 +31,28 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public R globalExceptionHandler(Exception exception) {
         exception.printStackTrace();
+        String message = exception.getMessage();
+        Class<? extends Exception> aClass = exception.getClass();
         log.warn("GlobalExceptionHandler:{},Description:{}", exception.getClass(), UNKNOWN_EXCEPTION_MESSAGE);
         return R.failure(RCodeEnum.SYSTEM_UNKNOWN_EXCEPTION);
+    }
+
+    /**
+     * 特定异常处理：参数格式前后端不匹配问题
+     *
+     * @param exception 特定异常
+     * @return 返回处理结果
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public R methodArgumentTypeMismatchException(MethodArgumentTypeMismatchException exception) {
+        if (exception.getMessage().contains("Failed to convert value of type")
+                && exception.getMessage().contains("to required type")
+                && exception.getMessage().contains("nested exception is")) {
+            exception.printStackTrace();
+            log.warn("NumberFormatException:{},Description:{}", exception.getClass(), exception.getMessage());
+            return R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH);
+        }
+        return globalExceptionHandler(exception);
     }
 
     /**

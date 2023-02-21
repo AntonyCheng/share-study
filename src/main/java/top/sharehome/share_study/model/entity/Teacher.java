@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Date;
 
@@ -21,7 +22,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @TableName(value = "share_study.t_teacher")
-public class Teacher {
+public class Teacher implements Serializable {
+    private static final long serialVersionUID = -4538857455119856760L;
     /**
      * 教师用户唯一ID
      */
@@ -166,4 +168,5 @@ public class Teacher {
     public static final String COL_UPDATE_TIME = "update_time";
 
     public static final String COL_IS_DELETED = "is_deleted";
+
 }
