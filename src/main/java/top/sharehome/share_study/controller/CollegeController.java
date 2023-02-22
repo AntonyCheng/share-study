@@ -7,6 +7,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
@@ -14,6 +15,7 @@ import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
 import top.sharehome.share_study.model.dto.CollegeGetDto;
 import top.sharehome.share_study.model.dto.CollegePageDto;
+import top.sharehome.share_study.model.entity.College;
 import top.sharehome.share_study.model.vo.CollegeAddVo;
 import top.sharehome.share_study.model.vo.CollegePageVo;
 import top.sharehome.share_study.model.vo.CollegeUpdateVo;
@@ -22,6 +24,7 @@ import top.sharehome.share_study.service.CollegeService;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 高校相关接口
@@ -42,7 +45,7 @@ public class CollegeController {
     private static final String MATCHER_NAME_REGEX = "^[\u4e00-\u9fa5]{0,}$";
 
     /**
-     * 姓名的匹配表达式
+     * 院校代码的匹配表达式
      */
     private static final String MATCHER_CODE_REGEX = "^\\d{5}$";
 
@@ -86,6 +89,12 @@ public class CollegeController {
         return R.success("删除院校成功");
     }
 
+    /**
+     * 批量删除高校接口
+     *
+     * @param ids 高校接口列表
+     * @return 返回删除结果
+     */
     @DeleteMapping("/deleteBatch")
     @ApiOperation("批量删除高校接口")
     public R<String> deleteBatch(@ApiParam(name = "ids", value = "高校ID列表", required = true) @RequestBody List<Long> ids) {
@@ -158,6 +167,18 @@ public class CollegeController {
         Page<CollegePageDto> page = collegeService.pageCollege(current, pageSize, collegePageVo);
 
         return R.success(page, "分页查询成功");
+    }
+
+    /**
+     * 高校ID和对应名称的List
+     *
+     * @return 高校名称List
+     */
+    @ApiOperation("高校ID和对应名称的List")
+    @GetMapping(value = "/list")
+    public R<List<CollegeGetDto>> list() {
+        List<CollegeGetDto> collegeGetDtoList = collegeService.listCollege();
+        return R.success(collegeGetDtoList, "回显高校名称成功");
     }
 
     /**

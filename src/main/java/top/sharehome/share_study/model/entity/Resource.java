@@ -72,14 +72,14 @@ public class Resource implements Serializable {
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "教学资料发布时间")
-    private Date createTime;
+    private LocalDateTime createTime;
 
     /**
      * 教学资料修改时间
      */
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     @ApiModelProperty(value = "教学资料修改时间")
-    private Date updateTime;
+    private LocalDateTime updateTime;
 
     /**
      * 逻辑删除（0表示未删除，1表示已删除）

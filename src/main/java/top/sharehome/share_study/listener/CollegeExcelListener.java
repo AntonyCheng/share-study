@@ -11,7 +11,7 @@ import javax.annotation.Resource;
 import java.awt.*;
 
 /**
- * EasyExcel监听类
+ * EasyExcel College 监听类
  *
  * @author AntonyCheng
  */
@@ -22,7 +22,6 @@ public class CollegeExcelListener extends AnalysisEventListener<College> {
 
     @Override
     public void invoke(College college, AnalysisContext analysisContext) {
-        college.setId(RandomUtils.nextLong());
         collegeMapper.insert(college);
     }
 

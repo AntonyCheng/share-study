@@ -11,6 +11,7 @@ import top.sharehome.share_study.common.constant.CommonConstant;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
+import top.sharehome.share_study.model.dto.TeacherLoginDto;
 import top.sharehome.share_study.model.vo.TeacherLoginVo;
 import top.sharehome.share_study.model.vo.TeacherRegisterVo;
 import top.sharehome.share_study.service.TeacherService;
@@ -45,6 +46,10 @@ public class TeacherController {
      */
     private static final String MATCHER_EMAIL_REGEX = "([a-z0-9A-Z]+[-|\\.]?)+[a-z0-9A-Z]@([a-z0-9A-Z]+(-[a-z0-9A-Z]+)?\\.)+[a-zA-Z]{2,}";
     /**
+     * 院校代码的匹配表达式
+     */
+    private static final String MATCHER_CODE_REGEX = "^\\d{5}$";
+    /**
      * 账号长度最小值
      */
     private static final Integer ACCOUNT_GE_LENGTH = 4;
@@ -74,8 +79,8 @@ public class TeacherController {
         if (StringUtils.isAnyEmpty(teacherRegisterVo.getAccount()
                 , teacherRegisterVo.getPassword()
                 , teacherRegisterVo.getCheckPassword()
-                , teacherRegisterVo.getName())
-                || ObjectUtils.isEmpty(teacherRegisterVo.getBelong())
+                , teacherRegisterVo.getName()
+                , teacherRegisterVo.getCode())
                 || ObjectUtils.isEmpty(teacherRegisterVo.getGender())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "必填参数为空");
         }
@@ -88,6 +93,11 @@ public class TeacherController {
         // 校验账户长度
         if (teacherRegisterVo.getAccount().length() > ACCOUNT_LE_LENGTH || teacherRegisterVo.getAccount().length() < ACCOUNT_GE_LENGTH) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.USERNAME_LENGTH_DO_NOT_MATCH), "用户账户的长度不匹配");
+        }
+
+        // 校验院校代码格式
+        if (!ReUtil.isMatch(MATCHER_CODE_REGEX, teacherRegisterVo.getCode())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.CODE_IS_MALFORMED),"院校代码格式有误");
         }
 
         // 校验账户格式
@@ -125,8 +135,8 @@ public class TeacherController {
      */
     @PostMapping("/login")
     @ApiOperation("用户登录接口")
-    public R<String> login(@ApiParam(name = "teacherRegisterVo", value = "教师登录VO实体", required = true) @RequestBody TeacherLoginVo teacherLoginVo,
-                           HttpServletRequest request) {
+    public R<TeacherLoginDto> login(@ApiParam(name = "teacherRegisterVo", value = "教师登录VO实体", required = true) @RequestBody TeacherLoginVo teacherLoginVo,
+                                    HttpServletRequest request) {
         // 判空
         if (StringUtils.isAnyEmpty(teacherLoginVo.getAccount(), teacherLoginVo.getPassword())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "必填参数为空");
@@ -153,9 +163,9 @@ public class TeacherController {
             session.removeAttribute(CommonConstant.USER_LOGIN_STATE);
         }
 
-        teacherService.login(teacherLoginVo, request);
+        TeacherLoginDto teacherLoginDto = teacherService.login(teacherLoginVo, request);
 
-        return R.success("登陆成功");
+        return R.success(teacherLoginDto, "登录成功");
     }
 
     /**

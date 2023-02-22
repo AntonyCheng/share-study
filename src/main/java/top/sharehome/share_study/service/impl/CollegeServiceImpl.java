@@ -4,7 +4,6 @@ import com.alibaba.excel.EasyExcelFactory;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.sun.deploy.net.URLEncoder;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -30,6 +29,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -119,9 +119,7 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
 
     @Override
     public void updateCollege(CollegeUpdateVo collegeUpdateVo) {
-        LambdaQueryWrapper<College> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(College::getId, collegeUpdateVo.getId());
-        College selectResult = collegeMapper.selectOne(queryWrapper);
+        College selectResult = collegeMapper.selectById(collegeUpdateVo.getId());
 
         if (selectResult == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "修改的高校对象并不在数据库中");
@@ -129,6 +127,15 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
 
         if (selectResult.getCode().equals(collegeUpdateVo.getCode()) && selectResult.getName().equals(collegeUpdateVo.getName())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_HAS_NOT_CHANGED_BEFORE_THE_MODIFICATION), "数据修改前后未发生变化");
+        }
+
+        LambdaQueryWrapper<College> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(College::getName, collegeUpdateVo.getName())
+                .or()
+                .eq(College::getCode, collegeUpdateVo.getCode());
+        College checkCollege = collegeMapper.selectOne(queryWrapper);
+        if (checkCollege != null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DUPLICATION_OF_INSTITUTIONS), "院校重复");
         }
 
         College college = new College();
@@ -195,21 +202,31 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
             String fileName = URLEncoder.encode("高校信息", "UTF-8").replaceAll("\\+", "%20");
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
             // 查询课程分类表所有的数据
-            List<College> subjectList = collegeMapper.selectList(null);
+            List<College> collegeList = collegeMapper.selectList(null);
             // 将subjectList转变成subjectEeVoList
-            List<College> subjectEeVoList = subjectList.stream().map(subject -> {
-                College subjectEeVo = new College();
-                BeanUtils.copyProperties(subject, subjectEeVo);
-                return subjectEeVo;
+            List<College> colleges = collegeList.stream().map(subject -> {
+                College college = new College();
+                BeanUtils.copyProperties(subject, college);
+                return college;
             }).collect(Collectors.toList());
             EasyExcelFactory.write(response.getOutputStream(), College.class)
-                    .sheet("高校数据数据")
-                    .doWrite(subjectEeVoList);
+                    .sheet("高校数据")
+                    .doWrite(colleges);
         } catch (UnsupportedEncodingException e) {
             throw new CustomizeFileException(R.failure(RCodeEnum.EXCEL_EXPORT_FAILED), "导出Excel时文件编码异常");
         } catch (IOException e) {
             throw new CustomizeFileException(R.failure(RCodeEnum.EXCEL_EXPORT_FAILED), "文件写入时，响应流发生异常");
         }
+    }
+
+    @Override
+    public List<CollegeGetDto> listCollege() {
+        List<College> list = this.list();
+        return list.stream().map(college -> {
+            CollegeGetDto collegeGetDto = new CollegeGetDto();
+            BeanUtils.copyProperties(college, collegeGetDto);
+            return collegeGetDto;
+        }).collect(Collectors.toList());
     }
 
 }

@@ -57,10 +57,10 @@ public class TeacherRegisterVo implements Serializable {
     private Byte gender;
 
     /**
-     * 所属高校的ID
+     * 所属高校的院校代码
      */
-    @ApiModelProperty(value = "所属高校的id")
-    private Long belong;
+    @ApiModelProperty(value = "所属高校的院校代码")
+    private String code;
 
     /**
      * 教师邮箱

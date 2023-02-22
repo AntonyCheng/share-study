@@ -1,4 +1,4 @@
-package top.sharehome.share_study.model.dto;
+package top.sharehome.share_study.model.vo;
 
 import io.swagger.annotations.ApiModel;
 import lombok.AllArgsConstructor;
@@ -8,17 +8,15 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * 教师用户Session对象
+ * 管理员修改自己信息Vo实体
  *
  * @author AntonyCheng
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ApiModel(description = "教师用户Session对象")
-public class TeacherLoginDto implements Serializable {
-
-    private static final long serialVersionUID = -4155135350610263261L;
+@ApiModel("管理员修改自己信息Vo实体")
+public class AdminUpdateSelfVo implements Serializable {
     /**
      * 教师用户唯一ID
      */
@@ -28,6 +26,11 @@ public class TeacherLoginDto implements Serializable {
      * 教师账号（具有唯一性，推荐手机号）
      */
     private String account;
+
+    /**
+     * 教师账号密码（推荐6-16位）
+     */
+    private String password;
 
     /**
      * 教师姓名
@@ -45,22 +48,13 @@ public class TeacherLoginDto implements Serializable {
     private Integer gender;
 
     /**
-     * 所属高校
+     * 所属高校的id
      */
-    private String collegeName;
+    private Long belong;
 
     /**
-     * 教师邮箱（需要隐藏）
+     * 教师邮箱
      */
     private String email;
-
-    /**
-     * 消息未读数
-     */
-    private Long messageNumber;
-
-    /**
-     * 用户角色（0普通用户，1管理员用户，2超级管理员）
-     */
-    private Integer role;
+    private static final long serialVersionUID = -1204353500081183461L;
 }

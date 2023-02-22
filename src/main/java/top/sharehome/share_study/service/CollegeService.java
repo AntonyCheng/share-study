@@ -72,4 +72,11 @@ public interface CollegeService extends IService<College> {
      * @param response 响应
      */
     void download(HttpServletResponse response);
+
+    /**
+     * 高校ID和对应名称的List
+     *
+     * @return 高校名称List
+     */
+    List<CollegeGetDto> listCollege();
 }

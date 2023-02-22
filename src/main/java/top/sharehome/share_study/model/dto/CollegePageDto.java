@@ -38,5 +38,5 @@ public class CollegePageDto {
     /**
      * 高校录入时间
      */
-    private Date createTime;
+    private LocalDateTime createTime;
 }

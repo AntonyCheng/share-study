@@ -206,7 +206,7 @@ public enum RCodeEnum {
     /**
      * 高校名称/代码已经存在 D0111
      */
-   COLLEGE_ALREADY_EXISTS("D0111", "高校名称/代码已经存在"),
+    COLLEGE_ALREADY_EXISTS("D0111", "高校名称/代码已经存在"),
 
     /**
      * 未登录 D0112
@@ -227,6 +227,21 @@ public enum RCodeEnum {
      * 修改前后数据没发生任何变化 D0115
      */
     DATA_HAS_NOT_CHANGED_BEFORE_THE_MODIFICATION("D0115", "修改前后数据没发生任何变化"),
+
+    /**
+     * 院校代码格式有误 D0116
+     */
+    CODE_IS_MALFORMED("D0116", "院校代码格式有误"),
+
+    /**
+     * 更新数据和后台数据相同 D0117
+     */
+    THE_UPDATE_DATA_IS_THE_SAME_AS_THE_BACKGROUND_DATA("D0117", "更新数据和后台数据相同"),
+
+    /**
+     * 院校重复 D0118
+     */
+    DUPLICATION_OF_INSTITUTIONS("D0118", "院校重复"),
 
     /**
      * 系统未知异常 Z0000

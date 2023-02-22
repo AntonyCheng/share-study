@@ -1,13 +1,17 @@
 package top.sharehome.share_study.model.entity;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import top.sharehome.share_study.common.converter.ExcelLocalDateTimeConverter;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
@@ -27,6 +31,7 @@ public class College implements Serializable {
      */
     @TableId(value = "college_id", type = IdType.ASSIGN_ID)
     @ApiModelProperty(value = "高校唯一ID")
+    @ExcelProperty(value = "高校唯一ID", index = 0)
     private Long id;
 
     /**
@@ -34,6 +39,7 @@ public class College implements Serializable {
      */
     @TableField(value = "college_name")
     @ApiModelProperty(value = "高校名称")
+    @ExcelProperty(value = "高校名称", index = 1)
     private String name;
 
     /**
@@ -41,6 +47,7 @@ public class College implements Serializable {
      */
     @TableField(value = "college_code")
     @ApiModelProperty(value = "院校代码")
+    @ExcelProperty(value = "院校代码", index = 2)
     private String code;
 
     /**
@@ -48,14 +55,16 @@ public class College implements Serializable {
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "高校录入时间")
-    private Date createTime;
+    @ExcelProperty(value = "高校录入时间", index = 3, converter = ExcelLocalDateTimeConverter.class)
+    private LocalDateTime createTime;
 
     /**
      * 高校更新时间
      */
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     @ApiModelProperty(value = "高校更新时间")
-    private Date updateTime;
+    @ExcelProperty(value = "高校更新时间", index = 4, converter = ExcelLocalDateTimeConverter.class)
+    private LocalDateTime updateTime;
 
     /**
      * 逻辑删除（0表示未删除，1表示已删除）
@@ -63,6 +72,7 @@ public class College implements Serializable {
     @TableField(value = "is_deleted", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "逻辑删除（0表示未删除，1表示已删除）")
     @TableLogic
+    @ExcelProperty(value = "逻辑删除（0表示未删除，1表示已删除）", index = 5)
     private Integer isDeleted;
 
     public static final String COL_COLLEGE_ID = "college_id";

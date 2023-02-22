@@ -1,5 +1,10 @@
 package top.sharehome.share_study.filter;
 
+/**
+ * @Description
+ * @Author:AntonyCheng
+ * @CreateTime:2023/2/22 14:05
+ */
 
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
@@ -17,13 +22,13 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- * 高校接口过滤器
+ * 管理员接口过滤器
  *
  * @author AntonyCheng
  */
-@WebFilter(filterName = "CollegeApiFilter", urlPatterns = "/*")
+@WebFilter(filterName = "AdminApiFilter", urlPatterns = "/*")
 @Slf4j
-public class CollegeApiFilter implements Filter {
+public class AdminApiFilter implements Filter {
 
     public static final AntPathMatcher ANT_PATH_MATCHER = new AntPathMatcher();
 
@@ -31,17 +36,24 @@ public class CollegeApiFilter implements Filter {
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
-        TeacherLoginDto adminLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
-        TeacherLoginDto userLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
 
         String requestUri = request.getRequestURI();
 
-        boolean matchCollegeResult = ANT_PATH_MATCHER.match("/api/college/**", requestUri);
+        TeacherLoginDto adminLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
 
-        String normalUserRequestList = "/api/college/list";
-        boolean normalUserRequest = Objects.equals(requestUri, normalUserRequestList);
+        String needHandleRequest = "/api/admin/**";
 
-        if (!matchCollegeResult || (normalUserRequest && adminLoginDto != null) || (normalUserRequest && userLoginDto != null)) {
+        String excludeRequestLogin = "/api/admin/login";
+
+        String normalAdminRequestLogout = "/api/admin/logout";
+        String normalAdminRequestGet = "/api/admin/getSelf/*";
+        String normalAdminRequestUpdate = "/api/admin/updateSelf";
+        Boolean excludeNormalAdminRequest = ANT_PATH_MATCHER.match(normalAdminRequestLogout, requestUri)
+                || ANT_PATH_MATCHER.match(normalAdminRequestGet, requestUri)
+                || ANT_PATH_MATCHER.match(normalAdminRequestUpdate, requestUri);
+
+        if (!ANT_PATH_MATCHER.match(needHandleRequest, requestUri)
+                || ANT_PATH_MATCHER.match(excludeRequestLogin, requestUri)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -52,7 +64,8 @@ public class CollegeApiFilter implements Filter {
             return;
         }
 
-        if (!Objects.equals(adminLoginDto.getRole(), CommonConstant.SUPER_ROLE)) {
+        Integer role = adminLoginDto.getRole();
+        if (Objects.equals(role, CommonConstant.ADMIN_ROLE) && Boolean.FALSE.equals(excludeNormalAdminRequest)) {
             response.setCharacterEncoding("UTF-8");
             response.getWriter().write(JSON.toJSONString(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED)));
             return;
