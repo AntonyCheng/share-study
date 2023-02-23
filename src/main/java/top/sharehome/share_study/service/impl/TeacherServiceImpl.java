@@ -9,7 +9,10 @@ import cn.hutool.core.util.DesensitizedUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.alibaba.excel.EasyExcelFactory;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,15 +23,10 @@ import top.sharehome.share_study.common.exception_handler.customize.CustomizeTra
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
 import top.sharehome.share_study.mapper.TeacherMapper;
-import top.sharehome.share_study.model.dto.AdminGetDto;
-import top.sharehome.share_study.model.dto.AdminGetSelfDto;
-import top.sharehome.share_study.model.dto.TeacherLoginDto;
+import top.sharehome.share_study.model.dto.*;
 import top.sharehome.share_study.model.entity.College;
 import top.sharehome.share_study.model.entity.Teacher;
-import top.sharehome.share_study.model.vo.AdminUpdateSelfVo;
-import top.sharehome.share_study.model.vo.AdminUpdateVo;
-import top.sharehome.share_study.model.vo.TeacherLoginVo;
-import top.sharehome.share_study.model.vo.TeacherRegisterVo;
+import top.sharehome.share_study.model.vo.*;
 import top.sharehome.share_study.service.CollegeService;
 import top.sharehome.share_study.service.TeacherService;
 
@@ -124,6 +122,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         String collegeName = collegeService.getById(teacher.getBelong()).getName();
         teacherLoginDto.setCollegeName(collegeName);
         teacherLoginDto.setEmail(teacher.getEmail());
+        teacherLoginDto.setScore(teacher.getScore());
         teacherLoginDto.setMessageNumber(teacher.getMessageTotal() - teacher.getMessageRead());
         teacherLoginDto.setRole(teacher.getRole());
         request.getSession().setAttribute(CommonConstant.USER_LOGIN_STATE, teacherLoginDto);
@@ -172,6 +171,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         String collegeName = collegeService.getById(teacher.getBelong()).getName();
         teacherLoginDto.setCollegeName(collegeName);
         teacherLoginDto.setEmail(teacher.getEmail());
+        teacherLoginDto.setScore(teacher.getScore());
         teacherLoginDto.setMessageNumber(teacher.getMessageTotal() - teacher.getMessageRead());
         teacherLoginDto.setRole(teacher.getRole());
         request.getSession().setAttribute(CommonConstant.ADMIN_LOGIN_STATE, teacherLoginDto);
@@ -218,6 +218,11 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_DOES_NOT_EXIST), "用户后台无数据");
         }
 
+        String passwordNeedCompare = DigestUtil.md5Hex(adminUpdateSelfVo.getPassword() + SALT);
+        if (!passwordNeedCompare.equals(teacher.getPassword())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.WRONG_USER_PASSWORD));
+        }
+
         if (Objects.equals(adminUpdateSelfVo.getAccount(), teacher.getAccount())
                 && Objects.equals(adminUpdateSelfVo.getGender(), teacher.getGender())
                 && Objects.equals(adminUpdateSelfVo.getBelong(), teacher.getBelong())
@@ -225,11 +230,6 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
                 && adminUpdateSelfVo.getName().equals(teacher.getName())
                 && adminUpdateSelfVo.getEmail().equals(teacher.getEmail())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.THE_UPDATE_DATA_IS_THE_SAME_AS_THE_BACKGROUND_DATA), "更新数据和库中数据相同");
-        }
-
-        String passwordNeedCompare = DigestUtil.md5Hex(adminUpdateSelfVo.getPassword() + SALT);
-        if (!passwordNeedCompare.equals(teacher.getPassword())) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.WRONG_USER_PASSWORD));
         }
 
         teacher.setAccount(adminUpdateSelfVo.getAccount());
@@ -261,7 +261,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         }
 
         if (!Objects.equals(teacher.getRole(), CommonConstant.ADMIN_ROLE)) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH), "修改的对象并非管理员");
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "获取信息的对象并非管理员");
         }
 
         if (Objects.equals(teacher.getRole(), CommonConstant.SUPER_ROLE)) {
@@ -295,7 +295,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         }
 
         if (!Objects.equals(teacher.getRole(), CommonConstant.ADMIN_ROLE)) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH), "修改的对象并非管理员");
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "修改的对象并非管理员");
         }
 
         if (Objects.equals(adminUpdateVo.getRole(), teacher.getRole())
@@ -336,20 +336,64 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             String fileName = URLEncoder.encode("管理员信息", "UTF-8").replaceAll("\\+", "%20");
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
             // 查询课程分类表所有的数据
-            List<Teacher> teacherList = teacherMapper.selectList(null);
-            // 将subjectList转变成subjectEeVoList
-            List<Teacher> teachers = teacherList.stream().map(subject -> {
-                Teacher subjectEeVo = new Teacher();
-                BeanUtils.copyProperties(subject, subjectEeVo);
-                return subjectEeVo;
-            }).collect(Collectors.toList());
-            EasyExcelFactory.write(response.getOutputStream(), College.class)
+            LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Teacher::getRole, CommonConstant.ADMIN_ROLE)
+                    .or()
+                    .eq(Teacher::getRole, CommonConstant.SUPER_ROLE)
+                    .orderByDesc(Teacher::getRole)
+                    .orderByAsc(Teacher::getStatus)
+                    .orderByDesc(Teacher::getScore)
+                    .orderByAsc(Teacher::getCreateTime);
+            List<Teacher> teacherList = teacherMapper.selectList(queryWrapper);
+            //// 将subjectList转变成subjectEeVoList
+            //List<Teacher> teachers = teacherList.stream().map(subject -> {
+            //    Teacher subjectEeVo = new Teacher();
+            //    BeanUtils.copyProperties(subject, subjectEeVo);
+            //    return subjectEeVo;
+            //}).collect(Collectors.toList());
+            EasyExcelFactory.write(response.getOutputStream(), Teacher.class)
                     .sheet("管理员数据")
-                    .doWrite(teachers);
+                    .doWrite(teacherList);
         } catch (UnsupportedEncodingException e) {
             throw new CustomizeFileException(R.failure(RCodeEnum.EXCEL_EXPORT_FAILED), "导出Excel时文件编码异常");
         } catch (IOException e) {
             throw new CustomizeFileException(R.failure(RCodeEnum.EXCEL_EXPORT_FAILED), "文件写入时，响应流发生异常");
         }
+    }
+
+    @Override
+    public Page<AdminPageDto> pageAdmin(Integer current, Integer pageSize, AdminPageVo adminPageVo) {
+        Page<Teacher> page = new Page<>(current, pageSize);
+        Page<AdminPageDto> returnResult = new Page<>(current, pageSize);
+
+        if (adminPageVo == null) {
+            this.page(page);
+            BeanUtils.copyProperties(page, returnResult, "records");
+            List<AdminPageDto> pageDtoList = page.getRecords().stream().map(record -> {
+                AdminPageDto adminPageDto = new AdminPageDto();
+                BeanUtils.copyProperties(record, adminPageDto);
+                return adminPageDto;
+            }).collect(Collectors.toList());
+            returnResult.setRecords(pageDtoList);
+            return returnResult;
+        }
+
+        LambdaQueryWrapper<Teacher> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.like(!StringUtils.isEmpty(adminPageVo.getAccount()), Teacher::getAccount, adminPageVo.getAccount())
+                .like(!StringUtils.isEmpty(adminPageVo.getName()), Teacher::getName, adminPageVo.getName())
+                .like(!ObjectUtils.isEmpty(adminPageVo.getGender()), Teacher::getGender, adminPageVo.getGender())
+                .like(!ObjectUtils.isEmpty(adminPageVo.getBelong()), Teacher::getBelong, adminPageVo.getBelong())
+                .like(!ObjectUtils.isEmpty(adminPageVo.getStatus()), Teacher::getStatus, adminPageVo.getStatus())
+                .like(!ObjectUtils.isEmpty(adminPageVo.getRole()), Teacher::getRole, adminPageVo.getRole())
+                .orderByAsc(Teacher::getCreateTime);
+        this.page(page, lambdaQueryWrapper);
+        BeanUtils.copyProperties(page, returnResult, "records");
+        List<AdminPageDto> pageDtoList = page.getRecords().stream().map(record -> {
+            AdminPageDto adminPageDto = new AdminPageDto();
+            BeanUtils.copyProperties(record, adminPageDto);
+            return adminPageDto;
+        }).collect(Collectors.toList());
+        returnResult.setRecords(pageDtoList);
+        return returnResult;
     }
 }

@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
- * 高校回显对象
+ * 高校分页回显对象
  *
  * @author AntonyCheng
  */

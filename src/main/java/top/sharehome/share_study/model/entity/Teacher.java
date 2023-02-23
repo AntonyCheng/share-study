@@ -1,5 +1,6 @@
 package top.sharehome.share_study.model.entity;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -11,6 +12,7 @@ import java.util.Date;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import top.sharehome.share_study.common.converter.ExcelLocalDateTimeConverter;
 
 /**
  * 教师用户表
@@ -29,6 +31,7 @@ public class Teacher implements Serializable {
      */
     @TableId(value = "teacher_id", type = IdType.ASSIGN_ID)
     @ApiModelProperty(value = "教师用户唯一ID")
+    @ExcelProperty(value = "教师用户唯一ID", index = 0)
     private Long id;
 
     /**
@@ -36,6 +39,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_account")
     @ApiModelProperty(value = "教师账号（具有唯一性，推荐手机号）")
+    @ExcelProperty(value = "教师账号", index = 1)
     private String account;
 
     /**
@@ -43,6 +47,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_password")
     @ApiModelProperty(value = "教师账号密码（推荐6-16位）")
+    @ExcelProperty(value = "教师账号密码", index = 2)
     private String password;
 
     /**
@@ -50,6 +55,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_name")
     @ApiModelProperty(value = "教师姓名")
+    @ExcelProperty(value = "教师姓名", index = 3)
     private String name;
 
     /**
@@ -57,6 +63,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_avatar")
     @ApiModelProperty(value = "教师头像地址")
+    @ExcelProperty(value = "教师头像地址", index = 4)
     private String avatar;
 
     /**
@@ -64,6 +71,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_gender")
     @ApiModelProperty(value = "教师性别（0表示男性，1表示女性）")
+    @ExcelProperty(value = "教师性别", index = 5)
     private Integer gender;
 
     /**
@@ -71,6 +79,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_belong")
     @ApiModelProperty(value = "所属高校的id")
+    @ExcelProperty(value = "所属高校的id", index = 6)
     private Long belong;
 
     /**
@@ -78,6 +87,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_email")
     @ApiModelProperty(value = "教师邮箱")
+    @ExcelProperty(value = "教师邮箱", index = 7)
     private String email;
 
     /**
@@ -85,6 +95,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_score")
     @ApiModelProperty(value = "教师创作贡献度")
+    @ExcelProperty(value = "教师创作贡献度", index = 8)
     private Long score;
 
     /**
@@ -92,6 +103,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_message_total")
     @ApiModelProperty(value = "消息总数")
+    @ExcelProperty(value = "消息总数", index = 9)
     private Long messageTotal;
 
     /**
@@ -99,6 +111,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_message_read")
     @ApiModelProperty(value = "消息已读数")
+    @ExcelProperty(value = "消息已读数", index = 10)
     private Long messageRead;
 
     /**
@@ -106,6 +119,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_status", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "教师状态（0表示正常，1表示封禁）")
+    @ExcelProperty(value = "教师状态", index = 11)
     private Integer status;
 
     /**
@@ -113,6 +127,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_role", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "用户角色（0普通用户，1管理员用户，2超级管理员）")
+    @ExcelProperty(value = "用户角色", index = 12)
     private Integer role;
 
     /**
@@ -120,6 +135,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "教师录入时间")
+    @ExcelProperty(value = "教师录入时间", index = 13, converter = ExcelLocalDateTimeConverter.class)
     private LocalDateTime createTime;
 
     /**
@@ -127,6 +143,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     @ApiModelProperty(value = "教师修改时间")
+    @ExcelProperty(value = "教师修改时间", index = 14, converter = ExcelLocalDateTimeConverter.class)
     private LocalDateTime updateTime;
 
     /**
@@ -135,6 +152,7 @@ public class Teacher implements Serializable {
     @TableField(value = "is_deleted", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "逻辑删除（0表示未删除，1表示已删除）")
     @TableLogic
+    @ExcelProperty(value = "逻辑删除", index = 15)
     private Integer isDeleted;
 
     public static final String COL_TEACHER_ID = "teacher_id";

@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * 高校添加Vo
+ * 高校分页Vo对象
  *
  * @author AntonyCheng
  */

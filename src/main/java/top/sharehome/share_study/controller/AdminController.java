@@ -14,11 +14,11 @@ import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
 import top.sharehome.share_study.model.dto.AdminGetDto;
 import top.sharehome.share_study.model.dto.AdminGetSelfDto;
-import top.sharehome.share_study.model.dto.CollegePageDto;
+import top.sharehome.share_study.model.dto.AdminPageDto;
 import top.sharehome.share_study.model.dto.TeacherLoginDto;
+import top.sharehome.share_study.model.vo.AdminPageVo;
 import top.sharehome.share_study.model.vo.AdminUpdateSelfVo;
 import top.sharehome.share_study.model.vo.AdminUpdateVo;
-import top.sharehome.share_study.model.vo.CollegePageVo;
 import top.sharehome.share_study.model.vo.TeacherLoginVo;
 import top.sharehome.share_study.service.TeacherService;
 
@@ -165,6 +165,10 @@ public class AdminController {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }
 
+        if (!(adminUpdateSelfVo.getGender() == 0 || adminUpdateSelfVo.getGender() == 1)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH));
+        }
+
         // 校验账户长度
         if (adminUpdateSelfVo.getAccount().length() > ACCOUNT_LE_LENGTH || adminUpdateSelfVo.getAccount().length() < ACCOUNT_GE_LENGTH) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.USERNAME_LENGTH_DO_NOT_MATCH), "用户账户的长度不匹配");
@@ -253,9 +257,31 @@ public class AdminController {
         return R.success("修改成功");
     }
 
-    // TODO:管理员分页接口
+    /**
+     * 管理员分页查询接口（可以做到姓名模糊查询以及学院代码模糊查询）
+     *
+     * @param current       当前页
+     * @param pageSize      页面条数
+     * @param adminPageVo 管理员分页Vo对象
+     * @return 返回分页结果
+     */
+    @PostMapping("/page/{current}/{pageSize}")
+    @ApiOperation("管理员分页查询接口")
+    public R<Page<AdminPageDto>> page(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, @ApiParam(name = "adminPageVo", value = "管理员分页Vo对象", required = true) @RequestBody(required = false) AdminPageVo adminPageVo) {
 
-    // TODO:完善Excel导出
+        if (ObjectUtils.isEmpty(current) || ObjectUtils.isEmpty(pageSize)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "分页参数为空");
+        }
+
+        if (current <= 0 || pageSize <= 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH), "分页参数格式错误");
+        }
+
+        Page<AdminPageDto> page = teacherService.pageAdmin(current, pageSize,adminPageVo );
+
+        return R.success(page, "分页查询成功");
+    }
+
 
     /**
      * 管理员信息导出

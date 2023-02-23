@@ -6,19 +6,18 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 /**
- * 教师用户Session对象
+ * 管理员分页回显对象
  *
  * @author AntonyCheng
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ApiModel(description = "教师用户Session对象")
-public class TeacherLoginDto implements Serializable {
-
-    private static final long serialVersionUID = -4155135350610263261L;
+@ApiModel(description = "管理员分页回显对象")
+public class AdminPageDto implements Serializable {
     /**
      * 教师用户唯一ID
      */
@@ -45,12 +44,12 @@ public class TeacherLoginDto implements Serializable {
     private Integer gender;
 
     /**
-     * 所属高校
+     * 所属高校的id
      */
-    private String collegeName;
+    private Long belong;
 
     /**
-     * 教师邮箱（需要隐藏）
+     * 教师邮箱
      */
     private String email;
 
@@ -60,12 +59,19 @@ public class TeacherLoginDto implements Serializable {
     private Long score;
 
     /**
-     * 消息未读数
+     * 教师状态
      */
-    private Long messageNumber;
+    private Integer status;
 
     /**
-     * 用户角色（0普通用户，1管理员用户，2超级管理员）
+     * 用户角色
      */
     private Integer role;
+
+    /**
+     * 管理员录入时间
+     */
+    private LocalDateTime createTime;
+
+    private static final long serialVersionUID = -4228344698094395313L;
 }

@@ -25,14 +25,7 @@ public class AdminExcelListener extends AnalysisEventListener<Teacher> {
 
     @Override
     public void invoke(Teacher teacher, AnalysisContext analysisContext) {
-        LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.ne(Teacher::getRole, CommonConstant.DEFAULT_ROLE)
-                .eq(Teacher::getStatus, 0);
-        List<Teacher> teachers = teacherMapper.selectList(queryWrapper);
-        teachers.forEach(t -> {
-            BeanUtils.copyProperties(t, teacher);
-            teacherMapper.insert(teacher);
-        });
+        teacherMapper.insert(teacher);
     }
 
     @Override

@@ -204,14 +204,14 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
             // 查询课程分类表所有的数据
             List<College> collegeList = collegeMapper.selectList(null);
             // 将subjectList转变成subjectEeVoList
-            List<College> colleges = collegeList.stream().map(subject -> {
-                College college = new College();
-                BeanUtils.copyProperties(subject, college);
-                return college;
-            }).collect(Collectors.toList());
+            //List<College> colleges = collegeList.stream().map(subject -> {
+            //    College college = new College();
+            //    BeanUtils.copyProperties(subject, college);
+            //    return college;
+            //}).collect(Collectors.toList());
             EasyExcelFactory.write(response.getOutputStream(), College.class)
                     .sheet("高校数据")
-                    .doWrite(colleges);
+                    .doWrite(collegeList);
         } catch (UnsupportedEncodingException e) {
             throw new CustomizeFileException(R.failure(RCodeEnum.EXCEL_EXPORT_FAILED), "导出Excel时文件编码异常");
         } catch (IOException e) {

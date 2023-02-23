@@ -1,14 +1,13 @@
 package top.sharehome.share_study.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import top.sharehome.share_study.model.dto.AdminGetDto;
 import top.sharehome.share_study.model.dto.AdminGetSelfDto;
+import top.sharehome.share_study.model.dto.AdminPageDto;
 import top.sharehome.share_study.model.dto.TeacherLoginDto;
 import top.sharehome.share_study.model.entity.Teacher;
 import com.baomidou.mybatisplus.extension.service.IService;
-import top.sharehome.share_study.model.vo.AdminUpdateSelfVo;
-import top.sharehome.share_study.model.vo.AdminUpdateVo;
-import top.sharehome.share_study.model.vo.TeacherLoginVo;
-import top.sharehome.share_study.model.vo.TeacherRegisterVo;
+import top.sharehome.share_study.model.vo.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -84,4 +83,14 @@ public interface TeacherService extends IService<Teacher> {
      * @param response 响应
      */
     void download(HttpServletResponse response);
+
+    /**
+     * 管理员分页查询接口（可以做到姓名模糊查询以及学院代码模糊查询）
+     *
+     * @param current       当前页
+     * @param pageSize      页面条数
+     * @param adminPageVo 管理员分页Vo对象
+     * @return 返回分页结果
+     */
+    Page<AdminPageDto> pageAdmin(Integer current, Integer pageSize, AdminPageVo adminPageVo);
 }
