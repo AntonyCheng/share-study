@@ -78,19 +78,26 @@ public interface TeacherService extends IService<Teacher> {
     void updateAdmin(AdminUpdateVo adminUpdateVo, HttpServletRequest request);
 
     /**
-     * 管理员信息导出
-     *
-     * @param response 响应
-     */
-    void download(HttpServletResponse response);
-
-    /**
      * 管理员分页查询接口（可以做到姓名模糊查询以及学院代码模糊查询）
      *
-     * @param current       当前页
-     * @param pageSize      页面条数
+     * @param current     当前页
+     * @param pageSize    页面条数
      * @param adminPageVo 管理员分页Vo对象
      * @return 返回分页结果
      */
     Page<AdminPageDto> pageAdmin(Integer current, Integer pageSize, AdminPageVo adminPageVo);
+
+    /**
+     * 管理员信息导出
+     *
+     * @param response 响应
+     */
+    void downloadAdmin(HttpServletResponse response);
+
+    /**
+     * 教师信息导出
+     *
+     * @param response 响应
+     */
+    void downloadTeacher(HttpServletResponse response);
 }

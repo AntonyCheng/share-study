@@ -18,6 +18,7 @@ import top.sharehome.share_study.service.TeacherService;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 /**
@@ -97,7 +98,7 @@ public class TeacherController {
 
         // 校验院校代码格式
         if (!ReUtil.isMatch(MATCHER_CODE_REGEX, teacherRegisterVo.getCode())) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.CODE_IS_MALFORMED),"院校代码格式有误");
+            throw new CustomizeReturnException(R.failure(RCodeEnum.CODE_IS_MALFORMED), "院校代码格式有误");
         }
 
         // 校验账户格式
@@ -181,4 +182,14 @@ public class TeacherController {
         return R.success("退出成功");
     }
 
+    /**
+     * 教师信息导出
+     *
+     * @param response 响应
+     */
+    @ApiOperation("教师信息Excel导出")
+    @GetMapping("/download")
+    public void download(HttpServletResponse response) {
+        teacherService.downloadTeacher(response);
+    }
 }

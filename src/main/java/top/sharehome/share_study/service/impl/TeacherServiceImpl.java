@@ -327,7 +327,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
-    public void download(HttpServletResponse response) {
+    public void downloadAdmin(HttpServletResponse response) {
         try {
             // 设置下载信息
             response.setContentType("application/vnd.ms-excel");
@@ -362,6 +362,40 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
+    public void downloadTeacher(HttpServletResponse response) {
+        try {
+            // 设置下载信息
+            response.setContentType("application/vnd.ms-excel");
+            response.setCharacterEncoding("utf-8");
+            // 这里URLEncoder.encode可以防止中文乱码 当然和easyexcel没有关系
+            String fileName = URLEncoder.encode("教师信息", "UTF-8").replaceAll("\\+", "%20");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
+            // 查询课程分类表所有的数据
+            LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper
+                    .eq(Teacher::getRole, CommonConstant.DEFAULT_ROLE)
+                    .orderByDesc(Teacher::getRole)
+                    .orderByAsc(Teacher::getStatus)
+                    .orderByDesc(Teacher::getScore)
+                    .orderByAsc(Teacher::getCreateTime);
+            List<Teacher> teacherList = teacherMapper.selectList(queryWrapper);
+            //// 将subjectList转变成subjectEeVoList
+            //List<Teacher> teachers = teacherList.stream().map(subject -> {
+            //    Teacher subjectEeVo = new Teacher();
+            //    BeanUtils.copyProperties(subject, subjectEeVo);
+            //    return subjectEeVo;
+            //}).collect(Collectors.toList());
+            EasyExcelFactory.write(response.getOutputStream(), Teacher.class)
+                    .sheet("教师数据")
+                    .doWrite(teacherList);
+        } catch (UnsupportedEncodingException e) {
+            throw new CustomizeFileException(R.failure(RCodeEnum.EXCEL_EXPORT_FAILED), "导出Excel时文件编码异常");
+        } catch (IOException e) {
+            throw new CustomizeFileException(R.failure(RCodeEnum.EXCEL_EXPORT_FAILED), "文件写入时，响应流发生异常");
+        }
+    }
+
+    @Override
     public Page<AdminPageDto> pageAdmin(Integer current, Integer pageSize, AdminPageVo adminPageVo) {
         Page<Teacher> page = new Page<>(current, pageSize);
         Page<AdminPageDto> returnResult = new Page<>(current, pageSize);
@@ -379,13 +413,22 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         }
 
         LambdaQueryWrapper<Teacher> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.like(!StringUtils.isEmpty(adminPageVo.getAccount()), Teacher::getAccount, adminPageVo.getAccount())
-                .like(!StringUtils.isEmpty(adminPageVo.getName()), Teacher::getName, adminPageVo.getName())
-                .like(!ObjectUtils.isEmpty(adminPageVo.getGender()), Teacher::getGender, adminPageVo.getGender())
-                .like(!ObjectUtils.isEmpty(adminPageVo.getBelong()), Teacher::getBelong, adminPageVo.getBelong())
-                .like(!ObjectUtils.isEmpty(adminPageVo.getStatus()), Teacher::getStatus, adminPageVo.getStatus())
-                .like(!ObjectUtils.isEmpty(adminPageVo.getRole()), Teacher::getRole, adminPageVo.getRole())
-                .orderByAsc(Teacher::getCreateTime);
+        lambdaQueryWrapper
+                .eq(Teacher::getRole, CommonConstant.ADMIN_ROLE)
+                .or()
+                .eq(Teacher::getRole, CommonConstant.SUPER_ROLE)
+                .and(
+                        queryWrapper -> {
+                            queryWrapper
+                                    .like(!StringUtils.isEmpty(adminPageVo.getAccount()), Teacher::getAccount, adminPageVo.getAccount())
+                                    .like(!StringUtils.isEmpty(adminPageVo.getName()), Teacher::getName, adminPageVo.getName())
+                                    .like(!ObjectUtils.isEmpty(adminPageVo.getGender()), Teacher::getGender, adminPageVo.getGender())
+                                    .like(!ObjectUtils.isEmpty(adminPageVo.getBelong()), Teacher::getBelong, adminPageVo.getBelong())
+                                    .like(!ObjectUtils.isEmpty(adminPageVo.getStatus()), Teacher::getStatus, adminPageVo.getStatus())
+                                    .like(!ObjectUtils.isEmpty(adminPageVo.getRole()), Teacher::getRole, adminPageVo.getRole())
+                                    .orderByAsc(Teacher::getCreateTime);
+                        }
+                );
         this.page(page, lambdaQueryWrapper);
         BeanUtils.copyProperties(page, returnResult, "records");
         List<AdminPageDto> pageDtoList = page.getRecords().stream().map(record -> {

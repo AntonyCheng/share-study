@@ -1,6 +1,7 @@
 package top.sharehome.share_study.common.exception_handler;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -49,8 +50,24 @@ public class GlobalExceptionHandler {
                 && exception.getMessage().contains("to required type")
                 && exception.getMessage().contains("nested exception is")) {
             exception.printStackTrace();
-            log.warn("NumberFormatException:{},Description:{}", exception.getClass(), exception.getMessage());
+            log.warn("MethodArgumentTypeMismatchException:{},Description:{}", exception.getClass(), exception.getMessage());
             return R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH);
+        }
+        return globalExceptionHandler(exception);
+    }
+
+    /**
+     * 特定异常处理器，POST请求未带有请求体问题
+     *
+     * @param exception 特定异常
+     * @return 返回处理结果
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public R httpMessageNotReadableExceptionHandler(HttpMessageNotReadableException exception) {
+        if (exception.getMessage().contains("Required request body is missing:")) {
+            exception.printStackTrace();
+            log.warn("HttpMessageNotReadableException:{},Description:{}", exception.getMessage(), exception.getMessage());
+            return R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY);
         }
         return globalExceptionHandler(exception);
     }

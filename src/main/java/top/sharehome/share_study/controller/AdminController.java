@@ -203,7 +203,7 @@ public class AdminController {
      */
     @GetMapping("/get/{id}")
     @ApiOperation("超级管理员获取管理员信息接口")
-    public R<AdminGetDto> get(@PathVariable("id") Long id, HttpServletRequest request) {
+    public R<AdminGetDto> getAdmin(@PathVariable("id") Long id, HttpServletRequest request) {
         if (ObjectUtils.isEmpty(id)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }
@@ -291,6 +291,6 @@ public class AdminController {
     @ApiOperation("管理员信息Excel导出")
     @GetMapping("/download")
     public void download(HttpServletResponse response) {
-        teacherService.download(response);
+        teacherService.downloadAdmin(response);
     }
 }
