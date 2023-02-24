@@ -189,7 +189,26 @@ public class TeacherController {
      */
     @ApiOperation("教师信息Excel导出")
     @GetMapping("/download")
-    public void download(HttpServletResponse response) {
+    public R<String> download(HttpServletResponse response) {
         teacherService.downloadTeacher(response);
+        return R.success("导出成功");
     }
+
+    /**
+     * 教师信息删除接口
+     *
+     * @param id 教师ID
+     * @return 删除结果信息
+     */
+    @ApiOperation("教师信息删除接口")
+    @DeleteMapping("/delete/{id}")
+    public R<String> delete(@PathVariable("id") Long id) {
+        if (id == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "教师ID为空");
+        }
+        teacherService.delete(id);
+        return R.success("删除教师成功");
+    }
+
+
 }

@@ -379,12 +379,6 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
                     .orderByDesc(Teacher::getScore)
                     .orderByAsc(Teacher::getCreateTime);
             List<Teacher> teacherList = teacherMapper.selectList(queryWrapper);
-            //// 将subjectList转变成subjectEeVoList
-            //List<Teacher> teachers = teacherList.stream().map(subject -> {
-            //    Teacher subjectEeVo = new Teacher();
-            //    BeanUtils.copyProperties(subject, subjectEeVo);
-            //    return subjectEeVo;
-            //}).collect(Collectors.toList());
             EasyExcelFactory.write(response.getOutputStream(), Teacher.class)
                     .sheet("教师数据")
                     .doWrite(teacherList);
@@ -392,6 +386,28 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             throw new CustomizeFileException(R.failure(RCodeEnum.EXCEL_EXPORT_FAILED), "导出Excel时文件编码异常");
         } catch (IOException e) {
             throw new CustomizeFileException(R.failure(RCodeEnum.EXCEL_EXPORT_FAILED), "文件写入时，响应流发生异常");
+        }
+    }
+
+    @Override
+    public void delete(Long id) {
+        LambdaQueryWrapper<Teacher> teacherLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        teacherLambdaQueryWrapper.eq(Teacher::getId, id);
+
+        Teacher selectResult = teacherMapper.selectOne(teacherLambdaQueryWrapper);
+        if (selectResult == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "教师不存在，不需要进行下一步操作");
+        }
+
+        if (Objects.equals(selectResult.getRole(), CommonConstant.ADMIN_ROLE)
+                || Objects.equals(selectResult.getRole(), CommonConstant.SUPER_ROLE)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED),"教师管理页面不得删除管理员信息");
+        }
+
+        int deleteResult = teacherMapper.delete(teacherLambdaQueryWrapper);
+
+        if (deleteResult == 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "教师数据删除失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
     }
 

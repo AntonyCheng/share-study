@@ -30,7 +30,7 @@ public class TeacherApiFilter implements Filter {
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
-        TeacherLoginDto userLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        TeacherLoginDto adminLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
 
         String requestUri = request.getRequestURI();
 
@@ -47,18 +47,9 @@ public class TeacherApiFilter implements Filter {
             return;
         }
 
-        if (userLoginDto == null) {
+        if (adminLoginDto == null) {
             response.setCharacterEncoding("UTF-8");
             response.getWriter().write(JSON.toJSONString(R.failure(RCodeEnum.NOT_LOGIN)));
-            return;
-        }
-
-        String onlyAdminRequest = "/api/teacher/download";
-        Integer role = userLoginDto.getRole();
-        if (ANT_PATH_MATCHER.match(onlyAdminRequest, requestUri)
-                && !(Objects.equals(role, CommonConstant.ADMIN_ROLE) || Objects.equals(role, CommonConstant.SUPER_ROLE))) {
-            response.setCharacterEncoding("UTF-8");
-            response.getWriter().write(JSON.toJSONString(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED)));
             return;
         }
 

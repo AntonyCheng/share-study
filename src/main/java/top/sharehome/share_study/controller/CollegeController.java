@@ -188,7 +188,8 @@ public class CollegeController {
      */
     @ApiOperation("高校信息Excel导出")
     @GetMapping("/download")
-    public void download(HttpServletResponse response) {
+    public R<String> download(HttpServletResponse response) {
         collegeService.download(response);
+        return R.success("导出成功");
     }
 }

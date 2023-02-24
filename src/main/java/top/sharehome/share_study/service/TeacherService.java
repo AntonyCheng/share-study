@@ -100,4 +100,11 @@ public interface TeacherService extends IService<Teacher> {
      * @param response 响应
      */
     void downloadTeacher(HttpServletResponse response);
+
+    /**
+     * 删除教师信息
+     *
+     * @param id 高校ID
+     */
+    void delete(Long id);
 }

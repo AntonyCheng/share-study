@@ -260,8 +260,8 @@ public class AdminController {
     /**
      * 管理员分页查询接口（可以做到姓名模糊查询以及学院代码模糊查询）
      *
-     * @param current       当前页
-     * @param pageSize      页面条数
+     * @param current     当前页
+     * @param pageSize    页面条数
      * @param adminPageVo 管理员分页Vo对象
      * @return 返回分页结果
      */
@@ -277,7 +277,7 @@ public class AdminController {
             throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH), "分页参数格式错误");
         }
 
-        Page<AdminPageDto> page = teacherService.pageAdmin(current, pageSize,adminPageVo );
+        Page<AdminPageDto> page = teacherService.pageAdmin(current, pageSize, adminPageVo);
 
         return R.success(page, "分页查询成功");
     }
@@ -290,7 +290,8 @@ public class AdminController {
      */
     @ApiOperation("管理员信息Excel导出")
     @GetMapping("/download")
-    public void download(HttpServletResponse response) {
+    public R<String> download(HttpServletResponse response) {
         teacherService.downloadAdmin(response);
+        return R.success("导出成功");
     }
 }
