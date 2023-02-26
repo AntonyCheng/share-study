@@ -1,16 +1,14 @@
 package top.sharehome.share_study.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import top.sharehome.share_study.model.dto.AdminGetDto;
-import top.sharehome.share_study.model.dto.AdminGetSelfDto;
-import top.sharehome.share_study.model.dto.AdminPageDto;
-import top.sharehome.share_study.model.dto.TeacherLoginDto;
-import top.sharehome.share_study.model.entity.Teacher;
 import com.baomidou.mybatisplus.extension.service.IService;
+import top.sharehome.share_study.model.dto.*;
+import top.sharehome.share_study.model.entity.Teacher;
 import top.sharehome.share_study.model.vo.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 
 /**
  * 教师用户Service
@@ -107,4 +105,38 @@ public interface TeacherService extends IService<Teacher> {
      * @param id 高校ID
      */
     void delete(Long id);
+
+    /**
+     * 批量删除教师接口
+     *
+     * @param ids 教师接口列表
+     */
+    void deleteBatch(List<Long> ids);
+
+    /**
+     * 管理员获取教师信息接口
+     *
+     * @param id      教师ID
+     * @param request 获取登录的Session状态
+     * @return 返回教师可修改信息
+     */
+    TeacherGetDto getTeacher(Long id, HttpServletRequest request);
+
+    /**
+     * 管理员修改教师信息接口
+     *
+     * @param teacherUpdateVo 管理员更新教师信息Vo实体
+     * @param request         获取Session中的登录状态
+     */
+    void updateTeacher(TeacherUpdateVo teacherUpdateVo, HttpServletRequest request);
+
+    /**
+     * 教师分页查询接口
+     *
+     * @param current       当前页
+     * @param pageSize      页面条数
+     * @param teacherPageVo 教师分页Vo对象
+     * @return 返回分页结果
+     */
+    Page<TeacherPageDto> pageTeacher(Integer current, Integer pageSize, TeacherPageVo teacherPageVo);
 }

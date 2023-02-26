@@ -7,15 +7,12 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
 import top.sharehome.share_study.model.dto.CollegeGetDto;
 import top.sharehome.share_study.model.dto.CollegePageDto;
-import top.sharehome.share_study.model.entity.College;
 import top.sharehome.share_study.model.vo.CollegeAddVo;
 import top.sharehome.share_study.model.vo.CollegePageVo;
 import top.sharehome.share_study.model.vo.CollegeUpdateVo;
@@ -24,7 +21,6 @@ import top.sharehome.share_study.service.CollegeService;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 高校相关接口

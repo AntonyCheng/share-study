@@ -1,7 +1,5 @@
 package top.sharehome.share_study.common.constant;
 
-import io.swagger.models.auth.In;
-
 /**
  * 通用常量类
  *

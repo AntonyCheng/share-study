@@ -258,7 +258,7 @@ public class AdminController {
     }
 
     /**
-     * 管理员分页查询接口（可以做到姓名模糊查询以及学院代码模糊查询）
+     * 管理员分页查询接口
      *
      * @param current     当前页
      * @param pageSize    页面条数

@@ -2,7 +2,6 @@ package top.sharehome.share_study.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import org.springframework.web.multipart.MultipartFile;
 import top.sharehome.share_study.model.dto.CollegeGetDto;
 import top.sharehome.share_study.model.dto.CollegePageDto;
 import top.sharehome.share_study.model.entity.College;

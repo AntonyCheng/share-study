@@ -13,7 +13,6 @@ import top.sharehome.share_study.common.exception_handler.customize.CustomizeRet
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeTransactionException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
-import top.sharehome.share_study.listener.CollegeExcelListener;
 import top.sharehome.share_study.mapper.CollegeMapper;
 import top.sharehome.share_study.mapper.TeacherMapper;
 import top.sharehome.share_study.model.dto.CollegeGetDto;
@@ -45,9 +44,6 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
 
     @Resource
     private TeacherMapper teacherMapper;
-
-    @Resource
-    private CollegeExcelListener collegeExcelListener;
 
     @Override
     @Transactional(rollbackFor = CustomizeReturnException.class)
@@ -186,7 +182,7 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
         ids.forEach(id -> {
             College college = this.getById(id);
             if (college == null) {
-                throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS));
+                throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "所要删除的高校ID中有不存在的高校");
             }
         });
         this.removeBatchByIds(ids);

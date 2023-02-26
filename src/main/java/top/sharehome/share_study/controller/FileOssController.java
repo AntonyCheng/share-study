@@ -63,7 +63,7 @@ public class FileOssController {
         if (size / 1024 >= 500) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.USER_UPLOADED_IMAGE_IS_TOO_LARGE));
         }
-        String url = fileOssService.upload(file, "avatar/");
+        String url = fileOssService.upload(file, "avatar");
         return R.success(url, "上传文件成功");
     }
 
@@ -99,7 +99,7 @@ public class FileOssController {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.USER_UPLOADED_FILE_IS_TOO_LARGE));
             }
         }
-        if (Arrays.asList("mp3","mp4").contains(suffix)) {
+        if (Arrays.asList("mp3", "mp4").contains(suffix)) {
             if (size / 1024 / 1024 >= 50) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.USER_UPLOADED_VIDEO_IS_TOO_LARGE));
             }
@@ -108,7 +108,12 @@ public class FileOssController {
         return R.success(url, "上传文件成功");
     }
 
-
+    /**
+     * OSS文件删除
+     *
+     * @param ossUrl oss链接
+     * @return 返回删除结果
+     */
     @ApiOperation("OSS文件删除")
     @DeleteMapping("/oss_file_delete")
     public R<String> fileDelete(String ossUrl) {

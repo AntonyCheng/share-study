@@ -1,10 +1,5 @@
 package top.sharehome.share_study.service.impl;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.Date;
-
 import cn.hutool.core.util.DesensitizedUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.alibaba.excel.EasyExcelFactory;
@@ -33,6 +28,9 @@ import top.sharehome.share_study.service.TeacherService;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -345,12 +343,6 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
                     .orderByDesc(Teacher::getScore)
                     .orderByAsc(Teacher::getCreateTime);
             List<Teacher> teacherList = teacherMapper.selectList(queryWrapper);
-            //// 将subjectList转变成subjectEeVoList
-            //List<Teacher> teachers = teacherList.stream().map(subject -> {
-            //    Teacher subjectEeVo = new Teacher();
-            //    BeanUtils.copyProperties(subject, subjectEeVo);
-            //    return subjectEeVo;
-            //}).collect(Collectors.toList());
             EasyExcelFactory.write(response.getOutputStream(), Teacher.class)
                     .sheet("管理员数据")
                     .doWrite(teacherList);
@@ -396,12 +388,12 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
 
         Teacher selectResult = teacherMapper.selectOne(teacherLambdaQueryWrapper);
         if (selectResult == null) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "教师不存在，不需要进行下一步操作");
+            throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "教师不存在，不需要进行下一步操作");
         }
 
         if (Objects.equals(selectResult.getRole(), CommonConstant.ADMIN_ROLE)
                 || Objects.equals(selectResult.getRole(), CommonConstant.SUPER_ROLE)) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED),"教师管理页面不得删除管理员信息");
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "教师管理页面不得删除管理员信息");
         }
 
         int deleteResult = teacherMapper.delete(teacherLambdaQueryWrapper);
@@ -409,6 +401,129 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         if (deleteResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "教师数据删除失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
+    }
+
+    @Override
+    public void deleteBatch(List<Long> ids) {
+        ids.forEach(id -> {
+            Teacher teacher = this.getById(id);
+            if (teacher == null) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS));
+            }
+            if (Objects.equals(teacher.getRole(), CommonConstant.ADMIN_ROLE)
+                    || Objects.equals(teacher.getRole(), CommonConstant.SUPER_ROLE)) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "教师管理页面不得删除管理员信息");
+            }
+        });
+        this.removeBatchByIds(ids);
+    }
+
+    @Override
+    public TeacherGetDto getTeacher(Long id, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
+        if (Objects.equals(teacherLoginDto.getRole(), CommonConstant.DEFAULT_ROLE)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "普通用户无权进行操作");
+        }
+
+        if (ObjectUtils.isEmpty(id)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "教师ID为空，无法回显");
+        }
+
+        Teacher resultFromDatabase = teacherMapper.selectById(id);
+        if (resultFromDatabase == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_DOES_NOT_EXIST), "用户后台无数据");
+        }
+        if (Objects.equals(resultFromDatabase.getRole(), CommonConstant.ADMIN_ROLE)
+                || Objects.equals(resultFromDatabase.getRole(), CommonConstant.SUPER_ROLE)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "管理员和超级管理员的信息不能在这个页面回显");
+        }
+
+        TeacherGetDto teacherGetDto = new TeacherGetDto();
+        teacherGetDto.setId(resultFromDatabase.getId());
+        teacherGetDto.setEmail(resultFromDatabase.getEmail());
+        teacherGetDto.setAvatar(resultFromDatabase.getAvatar());
+        teacherGetDto.setGender(resultFromDatabase.getGender());
+        teacherGetDto.setBelong(resultFromDatabase.getBelong());
+        teacherGetDto.setStatus(resultFromDatabase.getStatus());
+        teacherGetDto.setRole(resultFromDatabase.getRole());
+
+        return teacherGetDto;
+    }
+
+    @Override
+    public void updateTeacher(TeacherUpdateVo teacherUpdateVo, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
+        if (Objects.equals(teacherLoginDto.getRole(), CommonConstant.DEFAULT_ROLE)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "非管理员无法更改其他教师信息");
+        }
+
+        Teacher resultFromDatabase = teacherMapper.selectById(teacherUpdateVo.getId());
+        if (resultFromDatabase == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_DOES_NOT_EXIST), "用户后台无数据");
+        }
+        if (!Objects.equals(resultFromDatabase.getRole(), CommonConstant.DEFAULT_ROLE)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "修改的对象是管理员");
+        }
+
+        if (Objects.equals(teacherUpdateVo.getRole(), resultFromDatabase.getRole())
+                && Objects.equals(teacherUpdateVo.getGender(), resultFromDatabase.getGender())
+                && Objects.equals(teacherUpdateVo.getBelong(), resultFromDatabase.getBelong())
+                && teacherUpdateVo.getAvatar().equals(resultFromDatabase.getAvatar())
+                && teacherUpdateVo.getStatus().equals(resultFromDatabase.getStatus())
+                && teacherUpdateVo.getEmail().equals(resultFromDatabase.getEmail())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.THE_UPDATE_DATA_IS_THE_SAME_AS_THE_BACKGROUND_DATA), "更新数据和库中数据相同");
+        }
+
+        resultFromDatabase.setRole(teacherUpdateVo.getRole());
+        resultFromDatabase.setStatus(teacherUpdateVo.getStatus());
+        resultFromDatabase.setAvatar(teacherUpdateVo.getAvatar());
+        resultFromDatabase.setGender(teacherUpdateVo.getGender());
+        resultFromDatabase.setBelong(teacherUpdateVo.getBelong());
+        resultFromDatabase.setEmail(teacherUpdateVo.getEmail());
+
+        int updateResult = teacherMapper.updateById(resultFromDatabase);
+
+        // 判断数据库插入结果
+        if (updateResult == 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "修改用户失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+        }
+    }
+
+    @Override
+    public Page<TeacherPageDto> pageTeacher(Integer current, Integer pageSize, TeacherPageVo teacherPageVo) {
+        Page<Teacher> page = new Page<>(current, pageSize);
+        Page<TeacherPageDto> returnResult = new Page<>(current, pageSize);
+
+        if (teacherPageVo == null) {
+            this.page(page);
+            BeanUtils.copyProperties(page, returnResult, "records");
+            List<TeacherPageDto> pageDtoList = page.getRecords().stream().map(record -> {
+                TeacherPageDto teacherPageDto = new TeacherPageDto();
+                BeanUtils.copyProperties(record, teacherPageDto);
+                return teacherPageDto;
+            }).collect(Collectors.toList());
+            returnResult.setRecords(pageDtoList);
+            return returnResult;
+        }
+
+        LambdaQueryWrapper<Teacher> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper
+                .like(!StringUtils.isEmpty(teacherPageVo.getAccount()), Teacher::getAccount, teacherPageVo.getAccount())
+                .like(!StringUtils.isEmpty(teacherPageVo.getName()), Teacher::getName, teacherPageVo.getName())
+                .like(!ObjectUtils.isEmpty(teacherPageVo.getGender()), Teacher::getGender, teacherPageVo.getGender())
+                .like(!ObjectUtils.isEmpty(teacherPageVo.getBelong()), Teacher::getBelong, teacherPageVo.getBelong())
+                .like(!ObjectUtils.isEmpty(teacherPageVo.getStatus()), Teacher::getStatus, teacherPageVo.getStatus())
+                .like(!ObjectUtils.isEmpty(teacherPageVo.getRole()), Teacher::getRole, teacherPageVo.getRole())
+                .orderByAsc(Teacher::getCreateTime);
+        this.page(page, lambdaQueryWrapper);
+        BeanUtils.copyProperties(page, returnResult, "records");
+        List<TeacherPageDto> pageDtoList = page.getRecords().stream().map(record -> {
+            TeacherPageDto teacherPageDto = new TeacherPageDto();
+            BeanUtils.copyProperties(record, teacherPageDto);
+            return teacherPageDto;
+        }).collect(Collectors.toList());
+        returnResult.setRecords(pageDtoList);
+        return returnResult;
     }
 
     @Override

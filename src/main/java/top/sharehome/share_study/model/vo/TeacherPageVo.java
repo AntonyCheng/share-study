@@ -8,30 +8,25 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * 超级管理员修改管理员信息Vo实体
+ * 教师分页Vo对象
  *
  * @author AntonyCheng
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ApiModel("超级管理员修改管理员信息Vo实体")
-public class AdminUpdateVo implements Serializable {
-    private static final long serialVersionUID = 7828343118798801940L;
+@ApiModel("教师分页Vo对象")
+public class TeacherPageVo implements Serializable {
+    private static final long serialVersionUID = 1822299234345652300L;
     /**
-     * 教师用户唯一ID
+     * 教师账号（具有唯一性，推荐手机号）
      */
-    private Long id;
+    private String account;
 
     /**
-     * 教师邮箱
+     * 教师姓名
      */
-    private String email;
-
-    /**
-     * 教师头像地址
-     */
-    private String avatar;
+    private String name;
 
     /**
      * 教师性别（0表示男性，1表示女性）
@@ -44,12 +39,14 @@ public class AdminUpdateVo implements Serializable {
     private Long belong;
 
     /**
-     * 教师状态（0表示正常，1表示封禁）
+     * 教师状态
      */
     private Integer status;
 
     /**
-     * 用户角色（0普通用户，1管理员用户）
+     * 用户角色
      */
     private Integer role;
+
+
 }

@@ -1,4 +1,4 @@
-package top.sharehome.share_study.model.dto;
+package top.sharehome.share_study.model.vo;
 
 import io.swagger.annotations.ApiModel;
 import lombok.AllArgsConstructor;
@@ -8,16 +8,16 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * 超管获取管理员信息Dto实体
+ * 管理员修改教师信息Vo实体
  *
  * @author AntonyCheng
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ApiModel("超管获取管理员信息Dto实体")
-public class AdminGetDto implements Serializable {
-    private static final long serialVersionUID = 7034097590300460001L;
+@ApiModel("管理员修改教师信息Vo实体")
+public class TeacherUpdateVo implements Serializable {
+    private static final long serialVersionUID = -399295390711048705L;
     /**
      * 教师用户唯一ID
      */

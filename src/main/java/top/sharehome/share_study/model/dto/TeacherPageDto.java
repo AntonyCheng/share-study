@@ -6,27 +6,33 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 /**
- * 超管获取管理员信息Dto实体
+ * 教师分页回显对象
  *
  * @author AntonyCheng
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ApiModel("超管获取管理员信息Dto实体")
-public class AdminGetDto implements Serializable {
-    private static final long serialVersionUID = 7034097590300460001L;
+@ApiModel(description = "教师分页回显对象")
+public class TeacherPageDto implements Serializable {
+    private static final long serialVersionUID = 1504308710148455138L;
     /**
      * 教师用户唯一ID
      */
     private Long id;
 
     /**
-     * 教师邮箱
+     * 教师账号（具有唯一性，推荐手机号）
      */
-    private String email;
+    private String account;
+
+    /**
+     * 教师姓名
+     */
+    private String name;
 
     /**
      * 教师头像地址
@@ -44,12 +50,27 @@ public class AdminGetDto implements Serializable {
     private Long belong;
 
     /**
-     * 教师状态（0表示正常，1表示封禁）
+     * 教师邮箱
+     */
+    private String email;
+
+    /**
+     * 贡献度
+     */
+    private Long score;
+
+    /**
+     * 教师状态
      */
     private Integer status;
 
     /**
-     * 用户角色（0普通用户，1管理员用户）
+     * 用户角色
      */
     private Integer role;
+
+    /**
+     * 管理员录入时间
+     */
+    private LocalDateTime createTime;
 }

@@ -1,6 +1,7 @@
 package top.sharehome.share_study.controller;
 
 import cn.hutool.core.util.ReUtil;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -11,15 +12,21 @@ import top.sharehome.share_study.common.constant.CommonConstant;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
+import top.sharehome.share_study.model.dto.TeacherGetDto;
 import top.sharehome.share_study.model.dto.TeacherLoginDto;
+import top.sharehome.share_study.model.dto.TeacherPageDto;
 import top.sharehome.share_study.model.vo.TeacherLoginVo;
+import top.sharehome.share_study.model.vo.TeacherPageVo;
 import top.sharehome.share_study.model.vo.TeacherRegisterVo;
+import top.sharehome.share_study.model.vo.TeacherUpdateVo;
 import top.sharehome.share_study.service.TeacherService;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * 教师用户相关接口
@@ -210,5 +217,107 @@ public class TeacherController {
         return R.success("删除教师成功");
     }
 
+    /**
+     * 批量删除教师接口
+     *
+     * @param ids 教师接口列表
+     * @return 返回删除结果
+     */
+    @DeleteMapping("/deleteBatch")
+    @ApiOperation("批量删除教师接口")
+    public R<String> deleteBatch(@ApiParam(name = "ids", value = "教师ID列表", required = true) @RequestBody List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "教师ID列表为空");
+        }
+        teacherService.deleteBatch(ids);
+        return R.success("删除教师成功");
+    }
 
+    /**
+     * 管理员获取教师信息接口
+     *
+     * @param id      教师ID
+     * @param request 获取登录的Session状态
+     * @return 返回教师可修改信息
+     */
+    @GetMapping("/get/{id}")
+    @ApiOperation("管理员获取教师信息接口")
+    public R<TeacherGetDto> get(@PathVariable("id") Long id, HttpServletRequest request) {
+        if (ObjectUtils.isEmpty(id)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "教师ID为空");
+        }
+        TeacherGetDto teacherGetDto = teacherService.getTeacher(id, request);
+
+        return R.success(teacherGetDto, "回显成功");
+    }
+
+    /**
+     * 管理员修改教师信息接口
+     *
+     * @param teacherUpdateVo 管理员更新教师信息Vo实体
+     * @return 返回更新结果
+     */
+    @PutMapping("/update")
+    @ApiOperation("管理员修改教师信息接口")
+    public R<String> update(@RequestBody TeacherUpdateVo teacherUpdateVo, HttpServletRequest request) {
+        if (teacherUpdateVo == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
+        }
+
+        if (ObjectUtils.isEmpty(teacherUpdateVo.getId())
+                || ObjectUtils.isEmpty(teacherUpdateVo.getStatus())
+                || ObjectUtils.isEmpty(teacherUpdateVo.getGender())
+                || ObjectUtils.isEmpty(teacherUpdateVo.getBelong())
+                || ObjectUtils.isEmpty(teacherUpdateVo.getRole())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
+        }
+
+        if (!(teacherUpdateVo.getGender() == 0 || teacherUpdateVo.getGender() == 1)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH));
+        }
+
+        if (!(teacherUpdateVo.getStatus() == 0 || teacherUpdateVo.getStatus() == 1)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH));
+        }
+
+        if (!(Objects.equals(teacherUpdateVo.getRole(), CommonConstant.DEFAULT_ROLE)
+                || Objects.equals(teacherUpdateVo.getRole(), CommonConstant.ADMIN_ROLE)
+                || Objects.equals(teacherUpdateVo.getRole(), CommonConstant.SUPER_ROLE))) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH));
+        }
+
+        // 校验邮箱格式
+        if (!ObjectUtils.isEmpty(teacherUpdateVo.getEmail()) && !ReUtil.isMatch(MATCHER_EMAIL_REGEX, teacherUpdateVo.getEmail())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.EMAIL_FORMAT_VERIFICATION_FAILED), "邮箱格式有误");
+        }
+
+        teacherService.updateTeacher(teacherUpdateVo, request);
+
+        return R.success("修改成功");
+    }
+
+    /**
+     * 教师分页查询接口
+     *
+     * @param current       当前页
+     * @param pageSize      页面条数
+     * @param teacherPageVo 教师分页Vo对象
+     * @return 返回分页结果
+     */
+    @PostMapping("/page/{current}/{pageSize}")
+    @ApiOperation("教师分页查询接口")
+    public R<Page<TeacherPageDto>> page(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, @ApiParam(name = "teacherPageVo", value = "教师分页Vo对象", required = true) @RequestBody(required = false) TeacherPageVo teacherPageVo) {
+
+        if (ObjectUtils.isEmpty(current) || ObjectUtils.isEmpty(pageSize)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "分页参数为空");
+        }
+
+        if (current <= 0 || pageSize <= 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH), "分页参数格式错误");
+        }
+
+        Page<TeacherPageDto> page = teacherService.pageTeacher(current, pageSize, teacherPageVo);
+
+        return R.success(page, "分页查询成功");
+    }
 }
