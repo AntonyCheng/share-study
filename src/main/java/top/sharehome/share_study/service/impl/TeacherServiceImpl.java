@@ -415,7 +415,10 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
                 throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "教师管理页面不得删除管理员信息");
             }
         });
-        this.removeBatchByIds(ids);
+        int deleteResult = teacherMapper.deleteBatchIds(ids);
+        if (deleteResult == 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "教师数据删除失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+        }
     }
 
     @Override

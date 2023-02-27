@@ -249,6 +249,11 @@ public enum RCodeEnum {
     TEACHER_NOT_EXISTS("D0119", "教师不存在"),
 
     /**
+     * 教学资料不存在 D0120
+     */
+    RESOURCE_NOT_EXISTS("D0120", "教学资料不存在"),
+
+    /**
      * 系统未知异常 Z0000
      */
     SYSTEM_UNKNOWN_EXCEPTION("Z0000", "系统未知异常");

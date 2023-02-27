@@ -1,5 +1,6 @@
 package top.sharehome.share_study.model.entity;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -28,6 +29,7 @@ public class Resource implements Serializable {
      */
     @TableId(value = "resource_id", type = IdType.ASSIGN_ID)
     @ApiModelProperty(value = "教学资料唯一ID")
+    @ExcelProperty(value = "教学资料唯一ID", index = 0)
     private Long id;
 
     /**
@@ -35,6 +37,7 @@ public class Resource implements Serializable {
      */
     @TableField(value = "resource_belong")
     @ApiModelProperty(value = "所属老师ID")
+    @ExcelProperty(value = "所属老师ID", index = 1)
     private Long belong;
 
     /**
@@ -42,6 +45,7 @@ public class Resource implements Serializable {
      */
     @TableField(value = "resource_name")
     @ApiModelProperty(value = "教学资料名")
+    @ExcelProperty(value = "教学资料名", index = 2)
     private String name;
 
     /**
@@ -49,6 +53,7 @@ public class Resource implements Serializable {
      */
     @TableField(value = "resource_info")
     @ApiModelProperty(value = "教学资料简介")
+    @ExcelProperty(value = "教学资料简介", index = 3)
     private String info;
 
     /**
@@ -56,13 +61,15 @@ public class Resource implements Serializable {
      */
     @TableField(value = "resource_url")
     @ApiModelProperty(value = "教学资料所在地址")
+    @ExcelProperty(value = "教学资料所在地址", index = 4)
     private String url;
 
     /**
      * 教学资料状态（0表示正常，1表示封禁）
      */
     @TableField(value = "resource_status", fill = FieldFill.INSERT)
-    @ApiModelProperty(value = "教学资料状态（0表示正常，1表示封禁）,")
+    @ApiModelProperty(value = "教学资料状态（0表示正常，1表示封禁）")
+    @ExcelProperty(value = "教学资料状态", index = 5)
     private Integer status;
 
     /**
@@ -70,6 +77,7 @@ public class Resource implements Serializable {
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "教学资料发布时间")
+    @ExcelProperty(value = "教学资料发布时间", index = 6)
     private LocalDateTime createTime;
 
     /**
@@ -77,6 +85,7 @@ public class Resource implements Serializable {
      */
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     @ApiModelProperty(value = "教学资料修改时间")
+    @ExcelProperty(value = "教学资料修改时间", index = 7)
     private LocalDateTime updateTime;
 
     /**
@@ -85,6 +94,7 @@ public class Resource implements Serializable {
     @TableField(value = "is_deleted", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "逻辑删除（0表示未删除，1表示已删除）")
     @TableLogic
+    @ExcelProperty(value = "逻辑删除", index = 8)
     private Integer isDeleted;
 
     public static final String COL_RESOURCE_ID = "resource_id";
