@@ -254,6 +254,11 @@ public enum RCodeEnum {
     RESOURCE_NOT_EXISTS("D0120", "教学资料不存在"),
 
     /**
+     * 交流评论不存在 D0121
+     */
+    COMMENT_NOT_EXISTS("D0121", "交流评论不存在"),
+
+    /**
      * 系统未知异常 Z0000
      */
     SYSTEM_UNKNOWN_EXCEPTION("Z0000", "系统未知异常");

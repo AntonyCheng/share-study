@@ -34,7 +34,7 @@ public class ResourcePageDto implements Serializable {
     /**
      * 所属老师姓名
      */
-    private String teacherName;
+    private String belongName;
 
     /**
      * 教学资料名

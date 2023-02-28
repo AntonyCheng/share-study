@@ -48,7 +48,8 @@ public class ResourceController {
     /**
      * 教学资料信息删除接口
      *
-     * @param id 教学资料ID
+     * @param id      教学资料ID
+     * @param request 获取Session中的登录状态
      * @return 删除结果信息
      */
     @ApiOperation("教学资料信息删除接口")

@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -137,7 +138,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             }
         });
 
-        ids.forEach(id->{
+        ids.forEach(id -> {
             LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
             commentLambdaQueryWrapper.eq(Comment::getResource, id);
             commentMapper.delete(commentLambdaQueryWrapper);
@@ -236,9 +237,9 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
                 resourceLambdaQueryWrapper.eq(Teacher::getId, record.getBelong());
                 Teacher teacher = teacherMapper.selectOne(resourceLambdaQueryWrapper);
                 if (teacher == null) {
-                    throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS));
+                    throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "教学资料所属教师不存在");
                 }
-                resourcePageDto.setTeacherName(teacher.getName());
+                resourcePageDto.setBelongName(teacher.getName());
                 return resourcePageDto;
             }).collect(Collectors.toList());
             returnResult.setRecords(pageDtoList);
@@ -249,21 +250,38 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         lambdaQueryWrapper
                 .like(!StringUtils.isEmpty(resourcePageVo.getInfo()), Resource::getInfo, resourcePageVo.getInfo())
                 .like(!StringUtils.isEmpty(resourcePageVo.getName()), Resource::getName, resourcePageVo.getName())
-                .like(!ObjectUtils.isEmpty(resourcePageVo.getBelong()), Resource::getBelong, resourcePageVo.getBelong())
                 .like(!ObjectUtils.isEmpty(resourcePageVo.getStatus()), Resource::getStatus, resourcePageVo.getStatus())
                 .orderByAsc(Resource::getCreateTime);
         this.page(page, lambdaQueryWrapper);
         BeanUtils.copyProperties(page, returnResult, "records");
+
+        String belongName = resourcePageVo.getBelongName();
+        List<Long> teacherIds = new ArrayList<>();
+        if (!StringUtils.isEmpty(belongName)) {
+            LambdaQueryWrapper<Teacher> belongNameLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            belongNameLambdaQueryWrapper.like(Teacher::getName, belongName);
+            List<Teacher> teachers = teacherMapper.selectList(belongNameLambdaQueryWrapper);
+            teacherIds = teachers.stream().map(Teacher::getId).collect(Collectors.toList());
+        }
+        List<Long> finalTeacherIds = teacherIds;
+
+        if (finalTeacherIds.isEmpty()) {
+            page.setRecords(new ArrayList<>());
+        }
+
         List<ResourcePageDto> pageDtoList = page.getRecords().stream().map(record -> {
+            if (!finalTeacherIds.isEmpty() && !finalTeacherIds.contains(record.getBelong())) {
+                return null;
+            }
             ResourcePageDto resourcePageDto = new ResourcePageDto();
             BeanUtils.copyProperties(record, resourcePageDto);
-            LambdaQueryWrapper<Teacher> resourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            resourceLambdaQueryWrapper.eq(Teacher::getId, record.getBelong());
-            Teacher teacher = teacherMapper.selectOne(resourceLambdaQueryWrapper);
+            LambdaQueryWrapper<Teacher> teacherLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            teacherLambdaQueryWrapper.eq(Teacher::getId, record.getBelong());
+            Teacher teacher = teacherMapper.selectOne(teacherLambdaQueryWrapper);
             if (teacher == null) {
-                throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS));
+                throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "教学资料所属教师不存在");
             }
-            resourcePageDto.setTeacherName(teacher.getName());
+            resourcePageDto.setBelongName(teacher.getName());
             return resourcePageDto;
         }).collect(Collectors.toList());
         returnResult.setRecords(pageDtoList);

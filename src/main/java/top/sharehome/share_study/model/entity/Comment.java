@@ -1,11 +1,14 @@
 package top.sharehome.share_study.model.entity;
 
+import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import top.sharehome.share_study.common.converter.ExcelLocalDateTimeConverter;
+import top.sharehome.share_study.common.converter.ExcelLongConverter;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -23,11 +26,13 @@ import java.time.LocalDateTime;
 public class Comment implements Serializable {
 
     private static final long serialVersionUID = 7445732495167655770L;
+
     /**
      * 评论交流唯一ID
      */
     @TableId(value = "comment_id", type = IdType.ASSIGN_ID)
     @ApiModelProperty(value = "评论交流唯一ID")
+    @ExcelProperty(value = "评论交流唯一ID", index = 0, converter = ExcelLongConverter.class)
     private Long id;
 
     /**
@@ -35,6 +40,7 @@ public class Comment implements Serializable {
      */
     @TableField(value = "comment_resource")
     @ApiModelProperty(value = "评论所属资料ID")
+    @ExcelProperty(value = "评论所属资料ID", index = 1, converter = ExcelLongConverter.class)
     private Long resource;
 
     /**
@@ -42,6 +48,7 @@ public class Comment implements Serializable {
      */
     @TableField(value = "comment_belong")
     @ApiModelProperty(value = "评论的教师用户ID")
+    @ExcelProperty(value = "评论的教师用户ID", index = 2, converter = ExcelLongConverter.class)
     private Long belong;
 
     /**
@@ -49,6 +56,7 @@ public class Comment implements Serializable {
      */
     @TableField(value = "comment_send")
     @ApiModelProperty(value = "接收评论的教师用户ID")
+    @ExcelProperty(value = "接收评论的教师用户ID", index = 3, converter = ExcelLongConverter.class)
     private Long send;
 
     /**
@@ -56,20 +64,31 @@ public class Comment implements Serializable {
      */
     @TableField(value = "comment_content")
     @ApiModelProperty(value = "评论内容")
+    @ExcelProperty(value = "评论内容", index = 4)
     private String content;
+
+    /**
+     * 评论中所带的文件OSSUrl
+     */
+    @TableField(value = "comment_url")
+    @ApiModelProperty(value = "评论中所带的文件OSSUrl")
+    @ExcelProperty(value = "评论中所带的文件OSSUrl", index = 5)
+    private String url;
 
     /**
      * 评论是否已读（0表示未读，1表示已读）
      */
-    @TableField(value = "comment_read", fill = FieldFill.INSERT)
+    @TableField(value = "comment_read_status", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "评论是否已读（0表示未读，1表示已读）")
-    private Integer read;
+    @ExcelProperty(value = "评论是否已读", index = 6)
+    private Integer readStatus;
 
     /**
      * 评论状态(0表示正常，1表示已被封禁)
      */
     @TableField(value = "comment_status", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "评论状态(0表示正常，1表示已被封禁)")
+    @ExcelProperty(value = "评论状态", index = 7)
     private Integer status;
 
     /**
@@ -77,6 +96,7 @@ public class Comment implements Serializable {
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "评论发布时间")
+    @ExcelProperty(value = "评论发布时间", index = 8, converter = ExcelLocalDateTimeConverter.class)
     private LocalDateTime createTime;
 
     /**
@@ -84,6 +104,7 @@ public class Comment implements Serializable {
      */
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     @ApiModelProperty(value = "评论更新时间")
+    @ExcelProperty(value = "评论更新时间", index = 9, converter = ExcelLocalDateTimeConverter.class)
     private LocalDateTime updateTime;
 
     /**
@@ -92,6 +113,7 @@ public class Comment implements Serializable {
     @TableField(value = "is_deleted", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "逻辑删除（0表示未删除，1表示已删除）")
     @TableLogic
+    @ExcelProperty(value = "逻辑删除", index = 10)
     private Integer isDeleted;
 
     public static final String COL_COMMENT_ID = "comment_id";

@@ -25,9 +25,9 @@ public class ResourcePageVo implements Serializable {
     private static final long serialVersionUID = 5740229842935906781L;
 
     /**
-     * 所属老师ID
+     * 所属老师名称
      */
-    private Long belong;
+    private String belongName;
 
     /**
      * 教学资料名
