@@ -7,6 +7,8 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import top.sharehome.share_study.common.converter.ExcelLocalDateTimeConverter;
+import top.sharehome.share_study.common.converter.ExcelLongConverter;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -29,7 +31,7 @@ public class Resource implements Serializable {
      */
     @TableId(value = "resource_id", type = IdType.ASSIGN_ID)
     @ApiModelProperty(value = "教学资料唯一ID")
-    @ExcelProperty(value = "教学资料唯一ID", index = 0)
+    @ExcelProperty(value = "教学资料唯一ID", index = 0, converter = ExcelLongConverter.class)
     private Long id;
 
     /**
@@ -37,7 +39,7 @@ public class Resource implements Serializable {
      */
     @TableField(value = "resource_belong")
     @ApiModelProperty(value = "所属老师ID")
-    @ExcelProperty(value = "所属老师ID", index = 1)
+    @ExcelProperty(value = "所属老师ID", index = 1,converter = ExcelLongConverter.class)
     private Long belong;
 
     /**
@@ -77,7 +79,7 @@ public class Resource implements Serializable {
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "教学资料发布时间")
-    @ExcelProperty(value = "教学资料发布时间", index = 6)
+    @ExcelProperty(value = "教学资料发布时间", index = 6, converter = ExcelLocalDateTimeConverter.class)
     private LocalDateTime createTime;
 
     /**
@@ -85,7 +87,7 @@ public class Resource implements Serializable {
      */
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     @ApiModelProperty(value = "教学资料修改时间")
-    @ExcelProperty(value = "教学资料修改时间", index = 7)
+    @ExcelProperty(value = "教学资料修改时间", index = 7, converter = ExcelLocalDateTimeConverter.class)
     private LocalDateTime updateTime;
 
     /**

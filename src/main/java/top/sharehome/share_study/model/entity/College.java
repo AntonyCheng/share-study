@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import top.sharehome.share_study.common.converter.ExcelLocalDateTimeConverter;
+import top.sharehome.share_study.common.converter.ExcelLongConverter;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -29,7 +30,7 @@ public class College implements Serializable {
      */
     @TableId(value = "college_id", type = IdType.ASSIGN_ID)
     @ApiModelProperty(value = "高校唯一ID")
-    @ExcelProperty(value = "高校唯一ID", index = 0)
+    @ExcelProperty(value = "高校唯一ID", index = 0, converter = ExcelLongConverter.class)
     private Long id;
 
     /**

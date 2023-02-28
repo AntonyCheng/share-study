@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import top.sharehome.share_study.common.converter.ExcelLocalDateTimeConverter;
+import top.sharehome.share_study.common.converter.ExcelLongConverter;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -29,7 +30,7 @@ public class Teacher implements Serializable {
      */
     @TableId(value = "teacher_id", type = IdType.ASSIGN_ID)
     @ApiModelProperty(value = "教师用户唯一ID")
-    @ExcelProperty(value = "教师用户唯一ID", index = 0)
+    @ExcelProperty(value = "教师用户唯一ID", index = 0, converter = ExcelLongConverter.class)
     private Long id;
 
     /**
@@ -77,7 +78,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_belong")
     @ApiModelProperty(value = "所属高校的id")
-    @ExcelProperty(value = "所属高校的id", index = 6)
+    @ExcelProperty(value = "所属高校的id", index = 6, converter = ExcelLongConverter.class)
     private Long belong;
 
     /**
@@ -93,7 +94,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_score")
     @ApiModelProperty(value = "教师创作贡献度")
-    @ExcelProperty(value = "教师创作贡献度", index = 8)
+    @ExcelProperty(value = "教师创作贡献度", index = 8, converter = ExcelLongConverter.class)
     private Long score;
 
     /**
@@ -101,7 +102,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_message_total")
     @ApiModelProperty(value = "消息总数")
-    @ExcelProperty(value = "消息总数", index = 9)
+    @ExcelProperty(value = "消息总数", index = 9, converter = ExcelLongConverter.class)
     private Long messageTotal;
 
     /**
@@ -109,7 +110,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_message_read")
     @ApiModelProperty(value = "消息已读数")
-    @ExcelProperty(value = "消息已读数", index = 10)
+    @ExcelProperty(value = "消息已读数", index = 10, converter = ExcelLongConverter.class)
     private Long messageRead;
 
     /**

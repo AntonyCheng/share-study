@@ -1,31 +1,24 @@
 package top.sharehome.share_study.controller;
 
-import cn.hutool.core.util.ReUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.web.bind.annotation.*;
-import top.sharehome.share_study.common.constant.CommonConstant;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
 import top.sharehome.share_study.model.dto.ResourceGetDto;
 import top.sharehome.share_study.model.dto.ResourcePageDto;
-import top.sharehome.share_study.model.dto.TeacherGetDto;
-import top.sharehome.share_study.model.dto.TeacherPageDto;
 import top.sharehome.share_study.model.vo.ResourcePageVo;
 import top.sharehome.share_study.model.vo.ResourceUpdateVo;
-import top.sharehome.share_study.model.vo.TeacherPageVo;
-import top.sharehome.share_study.model.vo.TeacherUpdateVo;
 import top.sharehome.share_study.service.ResourceService;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * 教学资料相关接口

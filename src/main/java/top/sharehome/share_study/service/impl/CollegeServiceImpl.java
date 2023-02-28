@@ -114,6 +114,7 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void updateCollege(CollegeUpdateVo collegeUpdateVo) {
         College selectResult = collegeMapper.selectById(collegeUpdateVo.getId());
 
@@ -146,6 +147,7 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public Page<CollegePageDto> pageCollege(Integer current, Integer pageSize, CollegePageVo collegePageVo) {
         Page<College> page = new Page<>(current, pageSize);
         Page<CollegePageDto> returnResult = new Page<>(current, pageSize);
@@ -178,6 +180,7 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void deleteBath(List<Long> ids) {
         ids.forEach(id -> {
             College college = this.getById(id);
@@ -189,6 +192,7 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void download(HttpServletResponse response) {
         try {
             // 设置下载信息
@@ -216,6 +220,7 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public List<CollegeGetDto> listCollege() {
         List<College> list = this.list();
         return list.stream().map(college -> {

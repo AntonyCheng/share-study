@@ -10,10 +10,12 @@ import com.qcloud.cos.model.ObjectMetadata;
 import com.qcloud.cos.model.PutObjectRequest;
 import com.qcloud.cos.model.StorageClass;
 import com.qcloud.cos.region.Region;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeFileException;
+import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
 import top.sharehome.share_study.service.FileOssService;
@@ -32,6 +34,9 @@ import java.util.UUID;
 public class FileOssServiceImpl implements FileOssService {
     @Override
     public String upload(MultipartFile file, String rootPath) {
+        if (file == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "文件数据不能为空");
+        }
         String name = file.getOriginalFilename();
         // 1 初始化用户身份信息（secretId, secretKey）
         //用户的 SecretId，建议使用子账号密钥，授权遵循最小权限指引，降低使用风险。子账号密钥获取可参见 https://cloud.tencent.com/document/product/598/37140
@@ -73,6 +78,9 @@ public class FileOssServiceImpl implements FileOssService {
 
     @Override
     public void delete(String url) {
+        if (StringUtils.isEmpty(url)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "文件地址不能为空");
+        }
         // 1 初始化用户身份信息（secretId, secretKey）
         //用户的 SecretId，建议使用子账号密钥，授权遵循最小权限指引，降低使用风险。子账号密钥获取可参见 https://cloud.tencent.com/document/product/598/37140
         String secretId = TencentOssUtil.ACCESS_KEY_ID;

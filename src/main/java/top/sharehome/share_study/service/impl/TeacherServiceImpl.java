@@ -17,15 +17,18 @@ import top.sharehome.share_study.common.exception_handler.customize.CustomizeRet
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeTransactionException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
+import top.sharehome.share_study.mapper.CollegeMapper;
+import top.sharehome.share_study.mapper.CommentMapper;
+import top.sharehome.share_study.mapper.ResourceMapper;
 import top.sharehome.share_study.mapper.TeacherMapper;
 import top.sharehome.share_study.model.dto.*;
 import top.sharehome.share_study.model.entity.College;
+import top.sharehome.share_study.model.entity.Comment;
+import top.sharehome.share_study.model.entity.Resource;
 import top.sharehome.share_study.model.entity.Teacher;
 import top.sharehome.share_study.model.vo.*;
-import top.sharehome.share_study.service.CollegeService;
 import top.sharehome.share_study.service.TeacherService;
 
-import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -42,10 +45,14 @@ import java.util.stream.Collectors;
  */
 @Service
 public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> implements TeacherService {
-    @Resource
+    @javax.annotation.Resource
     private TeacherMapper teacherMapper;
-    @Resource
-    private CollegeService collegeService;
+    @javax.annotation.Resource
+    private CollegeMapper collegeMapper;
+    @javax.annotation.Resource
+    private ResourceMapper resourceMapper;
+    @javax.annotation.Resource
+    private CommentMapper commentMapper;
 
     /**
      * 注册加盐
@@ -66,7 +73,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         // 查询用户输入的院校代码存不存在
         LambdaQueryWrapper<College> collegeLambdaQueryWrapper = new LambdaQueryWrapper<>();
         collegeLambdaQueryWrapper.eq(College::getCode, teacherRegisterVo.getCode());
-        long resultFromCollege = collegeService.count(collegeLambdaQueryWrapper);
+        Long resultFromCollege = collegeMapper.selectCount(collegeLambdaQueryWrapper);
         if (resultFromCollege == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "没有该院校代码");
         }
@@ -117,7 +124,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         teacherLoginDto.setName(name);
         teacherLoginDto.setAvatar(teacher.getAvatar());
         teacherLoginDto.setGender(teacher.getGender());
-        String collegeName = collegeService.getById(teacher.getBelong()).getName();
+        String collegeName = collegeMapper.selectById(teacher.getBelong()).getName();
         teacherLoginDto.setCollegeName(collegeName);
         teacherLoginDto.setEmail(teacher.getEmail());
         teacherLoginDto.setScore(teacher.getScore());
@@ -166,7 +173,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         teacherLoginDto.setName(name);
         teacherLoginDto.setAvatar(teacher.getAvatar());
         teacherLoginDto.setGender(teacher.getGender());
-        String collegeName = collegeService.getById(teacher.getBelong()).getName();
+        String collegeName = collegeMapper.selectById(teacher.getBelong()).getName();
         teacherLoginDto.setCollegeName(collegeName);
         teacherLoginDto.setEmail(teacher.getEmail());
         teacherLoginDto.setScore(teacher.getScore());
@@ -325,6 +332,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void downloadAdmin(HttpServletResponse response) {
         try {
             // 设置下载信息
@@ -354,6 +362,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void downloadTeacher(HttpServletResponse response) {
         try {
             // 设置下载信息
@@ -382,6 +391,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void delete(Long id) {
         LambdaQueryWrapper<Teacher> teacherLambdaQueryWrapper = new LambdaQueryWrapper<>();
         teacherLambdaQueryWrapper.eq(Teacher::getId, id);
@@ -391,10 +401,17 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "教师不存在，不需要进行下一步操作");
         }
 
-        if (Objects.equals(selectResult.getRole(), CommonConstant.ADMIN_ROLE)
-                || Objects.equals(selectResult.getRole(), CommonConstant.SUPER_ROLE)) {
+        if (!Objects.equals(selectResult.getRole(), CommonConstant.DEFAULT_ROLE)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "教师管理页面不得删除管理员信息");
         }
+
+        LambdaQueryWrapper<Resource> resourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        resourceLambdaQueryWrapper.eq(Resource::getBelong, id);
+        resourceMapper.delete(resourceLambdaQueryWrapper);
+
+        LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        commentLambdaQueryWrapper.eq(Comment::getBelong, id);
+        commentMapper.delete(commentLambdaQueryWrapper);
 
         int deleteResult = teacherMapper.delete(teacherLambdaQueryWrapper);
 
@@ -404,6 +421,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void deleteBatch(List<Long> ids) {
         ids.forEach(id -> {
             Teacher teacher = this.getById(id);
@@ -415,6 +433,17 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
                 throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "教师管理页面不得删除管理员信息");
             }
         });
+
+        ids.forEach(id -> {
+            LambdaQueryWrapper<Resource> resourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            resourceLambdaQueryWrapper.eq(Resource::getBelong, id);
+            resourceMapper.delete(resourceLambdaQueryWrapper);
+
+            LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            commentLambdaQueryWrapper.eq(Comment::getBelong, id);
+            commentMapper.delete(commentLambdaQueryWrapper);
+        });
+
         int deleteResult = teacherMapper.deleteBatchIds(ids);
         if (deleteResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "教师数据删除失败，从数据库返回的影响行数为0，且在之前没有报出异常");
@@ -422,6 +451,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public TeacherGetDto getTeacher(Long id, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
         if (Objects.equals(teacherLoginDto.getRole(), CommonConstant.DEFAULT_ROLE)) {
@@ -454,6 +484,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void updateTeacher(TeacherUpdateVo teacherUpdateVo, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
         if (Objects.equals(teacherLoginDto.getRole(), CommonConstant.DEFAULT_ROLE)) {
@@ -493,12 +524,17 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public Page<TeacherPageDto> pageTeacher(Integer current, Integer pageSize, TeacherPageVo teacherPageVo) {
         Page<Teacher> page = new Page<>(current, pageSize);
         Page<TeacherPageDto> returnResult = new Page<>(current, pageSize);
+        LambdaQueryWrapper<Teacher> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper
+                .orderByDesc(Teacher::getRole)
+                .orderByAsc(Teacher::getCreateTime);
 
         if (teacherPageVo == null) {
-            this.page(page);
+            this.page(page, lambdaQueryWrapper);
             BeanUtils.copyProperties(page, returnResult, "records");
             List<TeacherPageDto> pageDtoList = page.getRecords().stream().map(record -> {
                 TeacherPageDto teacherPageDto = new TeacherPageDto();
@@ -509,15 +545,14 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             return returnResult;
         }
 
-        LambdaQueryWrapper<Teacher> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+
         lambdaQueryWrapper
                 .like(!StringUtils.isEmpty(teacherPageVo.getAccount()), Teacher::getAccount, teacherPageVo.getAccount())
                 .like(!StringUtils.isEmpty(teacherPageVo.getName()), Teacher::getName, teacherPageVo.getName())
                 .like(!ObjectUtils.isEmpty(teacherPageVo.getGender()), Teacher::getGender, teacherPageVo.getGender())
                 .like(!ObjectUtils.isEmpty(teacherPageVo.getBelong()), Teacher::getBelong, teacherPageVo.getBelong())
                 .like(!ObjectUtils.isEmpty(teacherPageVo.getStatus()), Teacher::getStatus, teacherPageVo.getStatus())
-                .like(!ObjectUtils.isEmpty(teacherPageVo.getRole()), Teacher::getRole, teacherPageVo.getRole())
-                .orderByAsc(Teacher::getCreateTime);
+                .like(!ObjectUtils.isEmpty(teacherPageVo.getRole()), Teacher::getRole, teacherPageVo.getRole());
         this.page(page, lambdaQueryWrapper);
         BeanUtils.copyProperties(page, returnResult, "records");
         List<TeacherPageDto> pageDtoList = page.getRecords().stream().map(record -> {
@@ -530,12 +565,21 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public Page<AdminPageDto> pageAdmin(Integer current, Integer pageSize, AdminPageVo adminPageVo) {
         Page<Teacher> page = new Page<>(current, pageSize);
         Page<AdminPageDto> returnResult = new Page<>(current, pageSize);
+        LambdaQueryWrapper<Teacher> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper
+                .eq(Teacher::getRole, CommonConstant.ADMIN_ROLE)
+                .or()
+                .eq(Teacher::getRole, CommonConstant.SUPER_ROLE);
 
         if (adminPageVo == null) {
-            this.page(page);
+            lambdaQueryWrapper
+                    .orderByDesc(Teacher::getRole)
+                    .orderByAsc(Teacher::getCreateTime);
+            this.page(page, lambdaQueryWrapper);
             BeanUtils.copyProperties(page, returnResult, "records");
             List<AdminPageDto> pageDtoList = page.getRecords().stream().map(record -> {
                 AdminPageDto adminPageDto = new AdminPageDto();
@@ -546,23 +590,15 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             return returnResult;
         }
 
-        LambdaQueryWrapper<Teacher> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper
-                .eq(Teacher::getRole, CommonConstant.ADMIN_ROLE)
-                .or()
-                .eq(Teacher::getRole, CommonConstant.SUPER_ROLE)
-                .and(
-                        queryWrapper -> {
-                            queryWrapper
-                                    .like(!StringUtils.isEmpty(adminPageVo.getAccount()), Teacher::getAccount, adminPageVo.getAccount())
-                                    .like(!StringUtils.isEmpty(adminPageVo.getName()), Teacher::getName, adminPageVo.getName())
-                                    .like(!ObjectUtils.isEmpty(adminPageVo.getGender()), Teacher::getGender, adminPageVo.getGender())
-                                    .like(!ObjectUtils.isEmpty(adminPageVo.getBelong()), Teacher::getBelong, adminPageVo.getBelong())
-                                    .like(!ObjectUtils.isEmpty(adminPageVo.getStatus()), Teacher::getStatus, adminPageVo.getStatus())
-                                    .like(!ObjectUtils.isEmpty(adminPageVo.getRole()), Teacher::getRole, adminPageVo.getRole())
-                                    .orderByAsc(Teacher::getCreateTime);
-                        }
-                );
+                .like(!StringUtils.isEmpty(adminPageVo.getAccount()), Teacher::getAccount, adminPageVo.getAccount())
+                .like(!StringUtils.isEmpty(adminPageVo.getName()), Teacher::getName, adminPageVo.getName())
+                .like(!ObjectUtils.isEmpty(adminPageVo.getGender()), Teacher::getGender, adminPageVo.getGender())
+                .like(!ObjectUtils.isEmpty(adminPageVo.getBelong()), Teacher::getBelong, adminPageVo.getBelong())
+                .like(!ObjectUtils.isEmpty(adminPageVo.getStatus()), Teacher::getStatus, adminPageVo.getStatus())
+                .like(!ObjectUtils.isEmpty(adminPageVo.getRole()), Teacher::getRole, adminPageVo.getRole())
+                .orderByDesc(Teacher::getRole)
+                .orderByAsc(Teacher::getCreateTime);
         this.page(page, lambdaQueryWrapper);
         BeanUtils.copyProperties(page, returnResult, "records");
         List<AdminPageDto> pageDtoList = page.getRecords().stream().map(record -> {

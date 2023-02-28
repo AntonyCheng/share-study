@@ -8,11 +8,14 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import top.sharehome.share_study.common.constant.CommonConstant;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeFileException;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
+import top.sharehome.share_study.common.exception_handler.customize.CustomizeTransactionException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
+import top.sharehome.share_study.mapper.CommentMapper;
 import top.sharehome.share_study.mapper.ResourceMapper;
 import top.sharehome.share_study.mapper.TeacherMapper;
 import top.sharehome.share_study.model.dto.*;
@@ -45,7 +48,11 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     @javax.annotation.Resource
     private TeacherMapper teacherMapper;
 
+    @javax.annotation.Resource
+    private CommentMapper commentMapper;
+
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void download(HttpServletResponse response) {
         try {
             // 设置下载信息
@@ -67,6 +74,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void delete(Long id, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
         if (Objects.equals(teacherLoginDto.getRole(), CommonConstant.DEFAULT_ROLE)) {
@@ -92,6 +100,10 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "管理员没有权限在此删除其他管理员和超级管理员的教学资料");
         }
 
+        LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        commentLambdaQueryWrapper.eq(Comment::getResource, id);
+        commentMapper.delete(commentLambdaQueryWrapper);
+
         int deleteResult = resourceMapper.delete(resourceLambdaQueryWrapper);
 
         if (deleteResult == 0) {
@@ -100,6 +112,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void deleteBatch(List<Long> ids, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
         if (Objects.equals(teacherLoginDto.getRole(), CommonConstant.DEFAULT_ROLE)) {
@@ -124,6 +137,12 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             }
         });
 
+        ids.forEach(id->{
+            LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            commentLambdaQueryWrapper.eq(Comment::getResource, id);
+            commentMapper.delete(commentLambdaQueryWrapper);
+        });
+
         int deleteResult = resourceMapper.deleteBatchIds(ids);
         if (deleteResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "教学资料数据删除失败，从数据库返回的影响行数为0，且在之前没有报出异常");
@@ -131,6 +150,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public ResourceGetDto get(Long id, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
         if (Objects.equals(teacherLoginDto.getRole(), CommonConstant.DEFAULT_ROLE)) {
@@ -164,6 +184,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void updateResource(ResourceUpdateVo resourceUpdateVo, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
         if (Objects.equals(teacherLoginDto.getRole(), CommonConstant.DEFAULT_ROLE)) {
@@ -200,6 +221,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public Page<ResourcePageDto> pageResource(Integer current, Integer pageSize, ResourcePageVo resourcePageVo) {
         Page<Resource> page = new Page<>(current, pageSize);
         Page<ResourcePageDto> returnResult = new Page<>(current, pageSize);
