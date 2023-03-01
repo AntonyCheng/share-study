@@ -75,7 +75,7 @@ public class TeacherController {
     private static final Integer PASSWORD_LE_LENGTH = 16;
 
     /**
-     * 用户注册接口
+     * 用户注册接口（无需权限）
      *
      * @param teacherRegisterVo 教师注册VO实体
      * @return 注册结果信息
@@ -139,7 +139,7 @@ public class TeacherController {
     }
 
     /**
-     * 用户登录接口
+     * 用户登录接口（无需权限）
      *
      * @param teacherLoginVo 教师登录VO实体
      * @param request        需要存入session用户的登录状态
@@ -181,7 +181,7 @@ public class TeacherController {
     }
 
     /**
-     * 用户退出接口
+     * 用户退出接口（无需权限）
      *
      * @param request 清空session登录状态
      * @return 返回退出信息
@@ -194,7 +194,7 @@ public class TeacherController {
     }
 
     /**
-     * 教师信息导出
+     * 教师信息导出（s）
      *
      * @param response 响应
      */
@@ -206,7 +206,7 @@ public class TeacherController {
     }
 
     /**
-     * 教师信息删除接口
+     * 教师信息删除接口（s/a）
      *
      * @param id 教师ID
      * @return 删除结果信息
@@ -222,7 +222,7 @@ public class TeacherController {
     }
 
     /**
-     * 批量删除教师接口
+     * 批量删除教师接口（s/a）
      *
      * @param ids 教师接口列表
      * @return 返回删除结果
@@ -238,7 +238,7 @@ public class TeacherController {
     }
 
     /**
-     * 管理员获取教师信息接口
+     * 管理员获取教师信息接口（s/a）
      *
      * @param id      教师ID
      * @param request 获取登录的Session状态
@@ -256,7 +256,7 @@ public class TeacherController {
     }
 
     /**
-     * 管理员修改教师信息接口
+     * 管理员修改教师信息接口（s/a）
      *
      * @param teacherUpdateVo 管理员更新教师信息Vo实体
      * @return 返回更新结果
@@ -301,7 +301,7 @@ public class TeacherController {
     }
 
     /**
-     * 教师分页查询接口
+     * 教师分页查询接口（s/a）
      *
      * @param current       当前页
      * @param pageSize      页面条数

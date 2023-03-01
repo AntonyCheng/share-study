@@ -34,7 +34,7 @@ public class CommentController {
     private CommentService commentService;
 
     /**
-     * 交流评论数据导出
+     * 交流评论数据导出（s）
      *
      * @param response 响应
      */
@@ -46,7 +46,7 @@ public class CommentController {
     }
 
     /**
-     * 交流评论数据删除接口
+     * 交流评论数据删除接口（s/a）
      *
      * @param id      交流评论ID
      * @param request 获取Session中的登录状态
@@ -66,7 +66,7 @@ public class CommentController {
     }
 
     /**
-     * 批量删除交流评论接口
+     * 批量删除交流评论接口（s/a）
      *
      * @param ids     交流评论ID列表
      * @param request 获取Session中的登录状态
@@ -86,7 +86,7 @@ public class CommentController {
     }
 
     /**
-     * 管理员获取交流评论信息接口
+     * 管理员获取交流评论信息接口（s/a）
      *
      * @param id      教师ID
      * @param request 获取登录的Session状态
@@ -106,7 +106,7 @@ public class CommentController {
     }
 
     /**
-     * 管理员修改交流评论信息接口
+     * 管理员修改交流评论信息接口（s/a）
      *
      * @param commentUpdateVo 管理员更新交流评论信息Vo实体
      * @return 返回更新结果
@@ -134,7 +134,7 @@ public class CommentController {
     }
 
     /**
-     * 交流评论分页查询接口
+     * 交流评论分页查询接口（s/a）
      *
      * @param current       当前页
      * @param pageSize      页面条数

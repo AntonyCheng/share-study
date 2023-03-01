@@ -69,7 +69,7 @@ public class AdminController {
     private static final Integer PASSWORD_LE_LENGTH = 16;
 
     /**
-     * 管理员登录接口
+     * 管理员登录接口（s/a）
      *
      * @param teacherLoginVo 教师登录VO实体
      * @param request        保存Session中登录状态
@@ -112,7 +112,7 @@ public class AdminController {
     }
 
     /**
-     * 管理员退出接口
+     * 管理员退出接口（无需权限）
      *
      * @param request 清空Session中登录状态
      * @return 返回退出信息
@@ -127,7 +127,7 @@ public class AdminController {
     }
 
     /**
-     * 管理员获取自己信息接口
+     * 管理员获取自己信息接口（s/a）
      *
      * @param id      管理员ID
      * @param request 获取Session中登录状态
@@ -148,7 +148,7 @@ public class AdminController {
     }
 
     /**
-     * 管理员修改自己信息接口
+     * 管理员修改自己信息接口（s/a）
      *
      * @param adminUpdateSelfVo 管理员更新自己信息Vo实体
      * @return 返回更新结果
@@ -202,7 +202,7 @@ public class AdminController {
     }
 
     /**
-     * 超级管理员获取管理员信息接口
+     * 超级管理员获取管理员信息接口（s）
      *
      * @param id      管理员ID
      * @param request 获取登录的Session状态
@@ -223,7 +223,7 @@ public class AdminController {
     }
 
     /**
-     * 超级管理员修改管理员信息接口
+     * 超级管理员修改管理员信息接口（s）
      *
      * @param adminUpdateVo 超级管理员更新管理员信息Vo实体
      * @return 返回更新结果
@@ -265,7 +265,7 @@ public class AdminController {
     }
 
     /**
-     * 管理员分页查询接口
+     * 管理员分页查询接口（s）
      *
      * @param current     当前页
      * @param pageSize    页面条数
@@ -293,7 +293,7 @@ public class AdminController {
 
 
     /**
-     * 管理员信息导出
+     * 管理员信息导出（s）
      *
      * @param response 响应
      */

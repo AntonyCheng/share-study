@@ -39,7 +39,7 @@ public class FileOssController {
             "ppt", "pptx", "mp3", "mp4"));
 
     /**
-     * 头像文件上传
+     * 头像文件上传（无需权限）
      *
      * @param file 用户头像上传的文件
      * @return 返回上传信息
@@ -69,7 +69,7 @@ public class FileOssController {
     }
 
     /**
-     * 其他文件上传
+     * 其他文件上传（s/a/u）
      *
      * @param file 用户上传的文件
      * @return 返回上传信息
@@ -110,7 +110,7 @@ public class FileOssController {
     }
 
     /**
-     * OSS文件删除
+     * OSS文件删除（无需权限）
      *
      * @param ossUrl oss链接
      * @return 返回删除结果

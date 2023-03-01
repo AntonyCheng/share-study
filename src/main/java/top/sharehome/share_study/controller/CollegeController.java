@@ -46,7 +46,7 @@ public class CollegeController {
     private static final String MATCHER_CODE_REGEX = "^\\d{5}$";
 
     /**
-     * 添加高校接口
+     * 添加高校接口（s）
      *
      * @param collegeAddVo 高校名称和代码
      * @return 返回添加结果
@@ -75,7 +75,7 @@ public class CollegeController {
     }
 
     /**
-     * 删除高校接口
+     * 删除高校接口（s）
      *
      * @param id 高校ID
      * @return 返回删除结果
@@ -95,7 +95,7 @@ public class CollegeController {
     }
 
     /**
-     * 批量删除高校接口
+     * 批量删除高校接口（s）
      *
      * @param ids 高校接口列表
      * @return 返回删除结果
@@ -115,7 +115,7 @@ public class CollegeController {
     }
 
     /**
-     * 获取单个高校信息接口，用于修改信息时的回显
+     * 获取单个高校信息接口，用于修改信息时的回显（s）
      *
      * @param id 高校ID
      * @return 返回回显结果
@@ -135,7 +135,7 @@ public class CollegeController {
     }
 
     /**
-     * 修改高校接口
+     * 修改高校接口（s）
      *
      * @param collegeUpdateVo 高校修改Vo对象
      * @return 返回修改完成信息
@@ -162,7 +162,7 @@ public class CollegeController {
     }
 
     /**
-     * 高校分页查询接口（可以做到姓名模糊查询以及学院代码模糊查询）
+     * 高校分页查询接口（可以做到模糊查询）（s）
      *
      * @param current       当前页
      * @param pageSize      页面条数
@@ -189,7 +189,7 @@ public class CollegeController {
     }
 
     /**
-     * 高校ID和对应名称的List
+     * 高校ID和对应名称的List（s/a/u）
      *
      * @return 高校名称List
      */
@@ -203,7 +203,7 @@ public class CollegeController {
     }
 
     /**
-     * 高校信息导出
+     * 高校信息导出（s）
      *
      * @param response 响应
      */

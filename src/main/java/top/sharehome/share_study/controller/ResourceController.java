@@ -34,7 +34,7 @@ public class ResourceController {
     private ResourceService resourceService;
 
     /**
-     * 教学资料信息导出
+     * 教学资料信息导出（s）
      *
      * @param response 响应
      */
@@ -46,7 +46,7 @@ public class ResourceController {
     }
 
     /**
-     * 教学资料信息删除接口
+     * 教学资料信息删除接口（s/a）
      *
      * @param id      教学资料ID
      * @param request 获取Session中的登录状态
@@ -63,7 +63,7 @@ public class ResourceController {
     }
 
     /**
-     * 批量删除教学资料接口
+     * 批量删除教学资料接口（s/a）
      *
      * @param ids 教学资料接口列表
      * @return 返回删除结果
@@ -79,7 +79,7 @@ public class ResourceController {
     }
 
     /**
-     * 管理员获取教学资料信息接口
+     * 管理员获取教学资料信息接口（s/a）
      *
      * @param id      教师ID
      * @param request 获取登录的Session状态
@@ -97,7 +97,7 @@ public class ResourceController {
     }
 
     /**
-     * 管理员修改教学资料信息接口
+     * 管理员修改教学资料信息接口（s/a）
      *
      * @param resourceUpdateVo 管理员更新教学资料信息Vo实体
      * @return 返回更新结果
@@ -124,7 +124,7 @@ public class ResourceController {
     }
 
     /**
-     * 教学资料分页查询接口
+     * 教学资料分页查询接口（s/a）
      *
      * @param current        当前页
      * @param pageSize       页面条数
