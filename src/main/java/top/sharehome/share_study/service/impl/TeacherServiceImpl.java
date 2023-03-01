@@ -324,6 +324,10 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "修改的对象并非管理员");
         }
 
+        if (Objects.equals(adminUpdateVo.getRole(), CommonConstant.SUPER_ROLE)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "不满足超级管理员唯一性");
+        }
+
         if (Objects.equals(adminUpdateVo.getRole(), teacher.getRole())
                 && Objects.equals(adminUpdateVo.getGender(), teacher.getGender())
                 && Objects.equals(adminUpdateVo.getBelong(), teacher.getBelong())
@@ -331,10 +335,6 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
                 && adminUpdateVo.getStatus().equals(teacher.getStatus())
                 && adminUpdateVo.getEmail().equals(teacher.getEmail())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.THE_UPDATE_DATA_IS_THE_SAME_AS_THE_BACKGROUND_DATA), "更新数据和库中数据相同");
-        }
-
-        if (Objects.equals(adminUpdateVo.getRole(), CommonConstant.SUPER_ROLE)) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED));
         }
 
         teacher.setRole(adminUpdateVo.getRole());
@@ -518,6 +518,10 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         }
         if (!Objects.equals(resultFromDatabase.getRole(), CommonConstant.DEFAULT_ROLE)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "修改的对象是管理员");
+        }
+
+        if (Objects.equals(teacherUpdateVo.getRole(), CommonConstant.SUPER_ROLE)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "不满足超级管理员唯一性");
         }
 
         if (Objects.equals(teacherUpdateVo.getRole(), resultFromDatabase.getRole())
