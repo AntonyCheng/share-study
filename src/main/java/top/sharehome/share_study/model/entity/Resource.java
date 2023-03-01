@@ -39,7 +39,7 @@ public class Resource implements Serializable {
      */
     @TableField(value = "resource_belong")
     @ApiModelProperty(value = "所属老师ID")
-    @ExcelProperty(value = "所属老师ID", index = 1,converter = ExcelLongConverter.class)
+    @ExcelProperty(value = "所属老师ID", index = 1, converter = ExcelLongConverter.class)
     private Long belong;
 
     /**

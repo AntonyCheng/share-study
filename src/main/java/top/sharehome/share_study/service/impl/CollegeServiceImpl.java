@@ -48,6 +48,7 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
     @Override
     @Transactional(rollbackFor = CustomizeReturnException.class)
     public void add(CollegeAddVo collegeAddVo) {
+        // 判断数据库中数据是否重复
         LambdaQueryWrapper<College> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(College::getName, collegeAddVo.getName())
                 .or()
@@ -60,6 +61,7 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
         // 进行数据拷贝和插入
         College college = new College();
         BeanUtils.copyProperties(collegeAddVo, college);
+
         int insertResult = collegeMapper.insert(college);
 
         // 判断数据库插入结果
@@ -71,14 +73,15 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
     @Override
     @Transactional(rollbackFor = CustomizeReturnException.class)
     public void delete(Long id) {
+        // 判断高校是否存在
         LambdaQueryWrapper<College> collegeLambdaQueryWrapper = new LambdaQueryWrapper<>();
         collegeLambdaQueryWrapper.eq(College::getId, id);
-
         College selectResult = collegeMapper.selectOne(collegeLambdaQueryWrapper);
         if (selectResult == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "高校不存在，不需要进行下一步操作");
         }
 
+        // 判断该高校是否还绑定着用户
         Long collegeId = selectResult.getId();
         LambdaQueryWrapper<Teacher> teacherLambdaQueryWrapper = new LambdaQueryWrapper<>();
         teacherLambdaQueryWrapper.eq(Teacher::getBelong, collegeId);
@@ -89,6 +92,7 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
 
         int deleteResult = collegeMapper.delete(collegeLambdaQueryWrapper);
 
+        // 判断数据库删除结果
         if (deleteResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "高校数据删除失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
@@ -97,14 +101,15 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public CollegeGetDto get(Long id) {
+        // 判断高校是否存在
         LambdaQueryWrapper<College> collegeLambdaQueryWrapper = new LambdaQueryWrapper<>();
         collegeLambdaQueryWrapper.eq(College::getId, id);
-
         College selectResult = collegeMapper.selectOne(collegeLambdaQueryWrapper);
         if (selectResult == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "高校不存在，不需要进行下一步操作");
         }
 
+        // 信息脱敏
         CollegeGetDto collegeGetDto = new CollegeGetDto();
         collegeGetDto.setId(selectResult.getId());
         collegeGetDto.setName(selectResult.getName());
@@ -116,16 +121,18 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void updateCollege(CollegeUpdateVo collegeUpdateVo) {
+        // 判断高校是否存在
         College selectResult = collegeMapper.selectById(collegeUpdateVo.getId());
-
         if (selectResult == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "修改的高校对象并不在数据库中");
         }
 
+        // 判断数据前后是否发生变化
         if (selectResult.getCode().equals(collegeUpdateVo.getCode()) && selectResult.getName().equals(collegeUpdateVo.getName())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_HAS_NOT_CHANGED_BEFORE_THE_MODIFICATION), "数据修改前后未发生变化");
         }
 
+        // 判断更新的院校是否重复
         LambdaQueryWrapper<College> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(College::getName, collegeUpdateVo.getName())
                 .or()
@@ -135,12 +142,15 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
             throw new CustomizeReturnException(R.failure(RCodeEnum.DUPLICATION_OF_INSTITUTIONS), "院校重复");
         }
 
+        // 包装新的高校对象
         College college = new College();
         college.setId(collegeUpdateVo.getId());
         college.setName(collegeUpdateVo.getName());
         college.setCode(collegeUpdateVo.getCode());
 
         int updateResult = collegeMapper.updateById(college);
+
+        // 判断数据库更新结果
         if (updateResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "高校数据修改失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
@@ -149,9 +159,16 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public Page<CollegePageDto> pageCollege(Integer current, Integer pageSize, CollegePageVo collegePageVo) {
+        // 创建原始分页数据以及返回分页数据
         Page<College> page = new Page<>(current, pageSize);
         Page<CollegePageDto> returnResult = new Page<>(current, pageSize);
 
+        // 过滤分页对象
+        LambdaQueryWrapper<College> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper
+                .orderByAsc(College::getCreateTime);
+
+        // 当不存在模糊查询时的分页操作
         if (collegePageVo == null) {
             this.page(page);
             BeanUtils.copyProperties(page, returnResult, "records");
@@ -164,10 +181,10 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
             return returnResult;
         }
 
-        LambdaQueryWrapper<College> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.like(!StringUtils.isEmpty(collegePageVo.getName()), College::getName, collegePageVo.getName())
-                .like(!StringUtils.isEmpty(collegePageVo.getCode()), College::getCode, collegePageVo.getCode())
-                .orderByAsc(College::getCreateTime);
+        // 当存在模糊查询时的分页操作
+        lambdaQueryWrapper
+                .like(!StringUtils.isEmpty(collegePageVo.getName()), College::getName, collegePageVo.getName())
+                .like(!StringUtils.isEmpty(collegePageVo.getCode()), College::getCode, collegePageVo.getCode());
         this.page(page, lambdaQueryWrapper);
         BeanUtils.copyProperties(page, returnResult, "records");
         List<CollegePageDto> pageDtoList = page.getRecords().stream().map(record -> {
@@ -182,6 +199,7 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void deleteBath(List<Long> ids) {
+        // 判断高校ID是否有对应的高校数据
         ids.forEach(id -> {
             College college = this.getById(id);
             if (college == null) {
@@ -201,14 +219,8 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
             // 这里URLEncoder.encode可以防止中文乱码 当然和easyexcel没有关系
             String fileName = URLEncoder.encode("高校信息", "UTF-8").replaceAll("\\+", "%20");
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
-            // 查询课程分类表所有的数据
+            // 查询高校分类表所有的数据
             List<College> collegeList = collegeMapper.selectList(null);
-            // 将subjectList转变成subjectEeVoList
-            //List<College> colleges = collegeList.stream().map(subject -> {
-            //    College college = new College();
-            //    BeanUtils.copyProperties(subject, college);
-            //    return college;
-            //}).collect(Collectors.toList());
             EasyExcelFactory.write(response.getOutputStream(), College.class)
                     .sheet("高校数据")
                     .doWrite(collegeList);
@@ -222,6 +234,7 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public List<CollegeGetDto> listCollege() {
+        // 获取高校的信息列表
         List<College> list = this.list();
         return list.stream().map(college -> {
             CollegeGetDto collegeGetDto = new CollegeGetDto();
@@ -229,5 +242,4 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
             return collegeGetDto;
         }).collect(Collectors.toList());
     }
-
 }

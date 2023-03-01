@@ -47,6 +47,7 @@ public class FileOssController {
     @ApiOperation("头像文件上传")
     @PostMapping("/oss_avatar_upload")
     public R<String> avatarUpload(MultipartFile file) {
+
         if (file == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }

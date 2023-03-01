@@ -11,11 +11,8 @@ import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
 import top.sharehome.share_study.model.dto.CommentGetDto;
 import top.sharehome.share_study.model.dto.CommentPageDto;
-import top.sharehome.share_study.model.dto.ResourcePageDto;
 import top.sharehome.share_study.model.vo.CommentPageVo;
 import top.sharehome.share_study.model.vo.CommentUpdateVo;
-import top.sharehome.share_study.model.vo.ResourcePageVo;
-import top.sharehome.share_study.model.vo.ResourceUpdateVo;
 import top.sharehome.share_study.service.CommentService;
 
 import javax.annotation.Resource;
@@ -58,10 +55,13 @@ public class CommentController {
     @ApiOperation("交流评论数据删除接口")
     @DeleteMapping("/delete/{id}")
     public R<String> delete(@PathVariable("id") Long id, HttpServletRequest request) {
+        // 判空
         if (id == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "交流评论ID为空");
         }
+
         commentService.delete(id, request);
+
         return R.success("删除教学资料成功");
     }
 
@@ -75,10 +75,13 @@ public class CommentController {
     @DeleteMapping("/deleteBatch")
     @ApiOperation("批量删除交流评论接口")
     public R<String> deleteBatch(@ApiParam(name = "ids", value = "交流评论ID列表", required = true) @RequestBody List<Long> ids, HttpServletRequest request) {
+        // 判空
         if (ids == null || ids.isEmpty()) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "教学资料ID列表为空");
         }
+
         commentService.deleteBatch(ids, request);
+
         return R.success("删除交流评论成功");
     }
 
@@ -92,9 +95,11 @@ public class CommentController {
     @GetMapping("/get/{id}")
     @ApiOperation("管理员获取交流评论信息接口")
     public R<CommentGetDto> get(@PathVariable("id") Long id, HttpServletRequest request) {
+        // 判空
         if (ObjectUtils.isEmpty(id)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "交流评论ID为空");
         }
+
         CommentGetDto commentGetDto = commentService.get(id, request);
 
         return R.success(commentGetDto, "回显成功");
@@ -109,15 +114,16 @@ public class CommentController {
     @PutMapping("/update")
     @ApiOperation("管理员修改交流评论信息接口")
     public R<String> update(@RequestBody CommentUpdateVo commentUpdateVo, HttpServletRequest request) {
+        // 判空
         if (commentUpdateVo == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }
-
         if (ObjectUtils.isEmpty(commentUpdateVo.getId())
                 || ObjectUtils.isEmpty(commentUpdateVo.getStatus())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }
 
+        // 判断该评论是否被封禁
         if (!(commentUpdateVo.getStatus() == 0 || commentUpdateVo.getStatus() == 1)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH));
         }
@@ -138,11 +144,12 @@ public class CommentController {
     @PostMapping("/page/{current}/{pageSize}")
     @ApiOperation("交流评论分页查询接口")
     public R<Page<CommentPageDto>> page(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, @ApiParam(name = "commentPageVo", value = "评论交流分页Vo对象", required = true) @RequestBody(required = false) CommentPageVo commentPageVo) {
-
+        // 判空
         if (ObjectUtils.isEmpty(current) || ObjectUtils.isEmpty(pageSize)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "分页参数为空");
         }
 
+        // 判断参数格式是否有误
         if (current <= 0 || pageSize <= 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH), "分页参数格式错误");
         }

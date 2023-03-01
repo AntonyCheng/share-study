@@ -18,7 +18,9 @@ import top.sharehome.share_study.common.response.RCodeEnum;
 import top.sharehome.share_study.mapper.CommentMapper;
 import top.sharehome.share_study.mapper.ResourceMapper;
 import top.sharehome.share_study.mapper.TeacherMapper;
-import top.sharehome.share_study.model.dto.*;
+import top.sharehome.share_study.model.dto.ResourceGetDto;
+import top.sharehome.share_study.model.dto.ResourcePageDto;
+import top.sharehome.share_study.model.dto.TeacherLoginDto;
 import top.sharehome.share_study.model.entity.Comment;
 import top.sharehome.share_study.model.entity.Resource;
 import top.sharehome.share_study.model.entity.Teacher;
@@ -62,7 +64,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             // 这里URLEncoder.encode可以防止中文乱码 当然和easyexcel没有关系
             String fileName = URLEncoder.encode("教学资料信息", "UTF-8").replaceAll("\\+", "%20");
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
-            // 查询课程分类表所有的数据
+            // 查询教学资料分类表所有的数据
             List<Resource> resourceList = resourceMapper.selectList(null);
             EasyExcelFactory.write(response.getOutputStream(), Resource.class)
                     .sheet("教学资料数据")

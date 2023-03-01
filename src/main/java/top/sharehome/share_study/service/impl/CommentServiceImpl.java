@@ -20,7 +20,6 @@ import top.sharehome.share_study.mapper.ResourceMapper;
 import top.sharehome.share_study.mapper.TeacherMapper;
 import top.sharehome.share_study.model.dto.CommentGetDto;
 import top.sharehome.share_study.model.dto.CommentPageDto;
-import top.sharehome.share_study.model.dto.ResourcePageDto;
 import top.sharehome.share_study.model.dto.TeacherLoginDto;
 import top.sharehome.share_study.model.entity.Comment;
 import top.sharehome.share_study.model.entity.Resource;
@@ -65,7 +64,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
             // 这里URLEncoder.encode可以防止中文乱码 当然和easyexcel没有关系
             String fileName = URLEncoder.encode("评论交流数据", "UTF-8").replaceAll("\\+", "%20");
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
-            // 查询课程分类表所有的数据
+            // 查询评论交流分类表所有的数据
             List<Comment> resourceList = commentMapper.selectList(null);
             EasyExcelFactory.write(response.getOutputStream(), Comment.class)
                     .sheet("评论交流数据")
@@ -234,7 +233,6 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         }
     }
 
-    // TODO:完善评论分页功能
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public Page<CommentPageDto> pageComment(Integer current, Integer pageSize, CommentPageVo commentPageVo) {

@@ -26,7 +26,6 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import java.util.Objects;
 
 /**
  * 管理员用户相关接口
@@ -73,7 +72,7 @@ public class AdminController {
      * 管理员登录接口
      *
      * @param teacherLoginVo 教师登录VO实体
-     * @param request        需要存入session用户的登录状态
+     * @param request        保存Session中登录状态
      * @return 登录信息
      */
     @PostMapping("/login")
@@ -106,6 +105,7 @@ public class AdminController {
             session.removeAttribute(CommonConstant.ADMIN_LOGIN_STATE);
         }
 
+        // 执行管理员登录操作
         TeacherLoginDto teacherLoginDto = teacherService.adminLogin(teacherLoginVo, request);
 
         return R.success(teacherLoginDto, "登录成功");
@@ -114,13 +114,15 @@ public class AdminController {
     /**
      * 管理员退出接口
      *
-     * @param request 清空session登录状态
+     * @param request 清空Session中登录状态
      * @return 返回退出信息
      */
     @PostMapping("/logout")
     @ApiOperation("管理员退出接口")
     public R<String> logout(HttpServletRequest request) {
+        // 清空Session登录状态
         request.getSession().removeAttribute(CommonConstant.ADMIN_LOGIN_STATE);
+
         return R.success("管理员退出成功");
     }
 
@@ -128,15 +130,18 @@ public class AdminController {
      * 管理员获取自己信息接口
      *
      * @param id      管理员ID
-     * @param request 获取登录的Session状态
+     * @param request 获取Session中登录状态
      * @return 返回管理员自己的可修改信息
      */
     @GetMapping("/getSelf/{id}")
     @ApiOperation("管理员获取自己信息接口")
     public R<AdminGetSelfDto> getSelf(@PathVariable("id") Long id, HttpServletRequest request) {
+        // 判空
         if (ObjectUtils.isEmpty(id)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }
+
+        // 执行获取自身信息的操作
         AdminGetSelfDto adminGetSelfDto = teacherService.getSelf(id, request);
 
         return R.success(adminGetSelfDto, "回显成功");
@@ -151,10 +156,10 @@ public class AdminController {
     @PutMapping("/updateSelf")
     @ApiOperation("管理员修改自己信息接口")
     public R<String> updateSelf(@RequestBody AdminUpdateSelfVo adminUpdateSelfVo, HttpServletRequest request) {
+        // 判空
         if (adminUpdateSelfVo == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }
-
         if (StringUtils.isAnyEmpty(
                 adminUpdateSelfVo.getAccount(),
                 adminUpdateSelfVo.getPassword(),
@@ -165,6 +170,7 @@ public class AdminController {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }
 
+        // 判断性别数据是否正确
         if (!(adminUpdateSelfVo.getGender() == 0 || adminUpdateSelfVo.getGender() == 1)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH));
         }
@@ -189,6 +195,7 @@ public class AdminController {
             throw new CustomizeReturnException(R.failure(RCodeEnum.EMAIL_FORMAT_VERIFICATION_FAILED), "邮箱格式有误");
         }
 
+        // 执行更新自身信息的操作
         teacherService.updateSelf(adminUpdateSelfVo, request);
 
         return R.success("修改成功");
@@ -204,9 +211,12 @@ public class AdminController {
     @GetMapping("/get/{id}")
     @ApiOperation("超级管理员获取管理员信息接口")
     public R<AdminGetDto> getAdmin(@PathVariable("id") Long id, HttpServletRequest request) {
+        // 判空
         if (ObjectUtils.isEmpty(id)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }
+
+        // 执行超级管理员获取管理员信息的操作
         AdminGetDto adminGetDto = teacherService.getAdmin(id, request);
 
         return R.success(adminGetDto, "回显成功");
@@ -221,10 +231,10 @@ public class AdminController {
     @PutMapping("/update")
     @ApiOperation("超级管理员修改管理员信息接口")
     public R<String> updateAdmin(@RequestBody AdminUpdateVo adminUpdateVo, HttpServletRequest request) {
+        // 判空
         if (adminUpdateVo == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }
-
         if (ObjectUtils.isEmpty(adminUpdateVo.getId())
                 || ObjectUtils.isEmpty(adminUpdateVo.getStatus())
                 || ObjectUtils.isEmpty(adminUpdateVo.getGender())
@@ -233,17 +243,13 @@ public class AdminController {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }
 
+        // 判断性别数据是否正确
         if (!(adminUpdateVo.getGender() == 0 || adminUpdateVo.getGender() == 1)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH));
         }
 
+        // 判断状态数据是否正确
         if (!(adminUpdateVo.getStatus() == 0 || adminUpdateVo.getStatus() == 1)) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH));
-        }
-
-        if (!(Objects.equals(adminUpdateVo.getRole(), CommonConstant.DEFAULT_ROLE)
-                || Objects.equals(adminUpdateVo.getRole(), CommonConstant.ADMIN_ROLE)
-                || Objects.equals(adminUpdateVo.getRole(), CommonConstant.SUPER_ROLE))) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH));
         }
 
@@ -252,6 +258,7 @@ public class AdminController {
             throw new CustomizeReturnException(R.failure(RCodeEnum.EMAIL_FORMAT_VERIFICATION_FAILED), "邮箱格式有误");
         }
 
+        // 执行超级管理员更新管理员信息的操作
         teacherService.updateAdmin(adminUpdateVo, request);
 
         return R.success("修改成功");
@@ -268,15 +275,17 @@ public class AdminController {
     @PostMapping("/page/{current}/{pageSize}")
     @ApiOperation("管理员分页查询接口")
     public R<Page<AdminPageDto>> page(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, @ApiParam(name = "adminPageVo", value = "管理员分页Vo对象", required = true) @RequestBody(required = false) AdminPageVo adminPageVo) {
-
+        // 判空
         if (ObjectUtils.isEmpty(current) || ObjectUtils.isEmpty(pageSize)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "分页参数为空");
         }
 
+        // 判断数据格式
         if (current <= 0 || pageSize <= 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH), "分页参数格式错误");
         }
 
+        // 执行管理员信息分页操作
         Page<AdminPageDto> page = teacherService.pageAdmin(current, pageSize, adminPageVo);
 
         return R.success(page, "分页查询成功");
@@ -291,7 +300,9 @@ public class AdminController {
     @ApiOperation("管理员信息Excel导出")
     @GetMapping("/download")
     public R<String> download(HttpServletResponse response) {
+        // 执行管理员信息导出为Excel的操作
         teacherService.downloadAdmin(response);
+
         return R.success("导出成功");
     }
 }

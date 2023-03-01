@@ -128,7 +128,11 @@ public class TeacherController {
             throw new CustomizeReturnException(R.failure(RCodeEnum.PASSWORD_LENGTH_DO_NOT_MATCH), "用户密码的长度不匹配");
         }
 
-        // 判断
+        // 校验性别数据格式
+        if (!(teacherRegisterVo.getGender() == 0 || teacherRegisterVo.getGender() == 1)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH),"不满足性别二元性");
+        }
+
         teacherService.register(teacherRegisterVo);
 
         return R.success("注册成功");

@@ -49,6 +49,11 @@ public class AdminPageDto implements Serializable {
     private Long belong;
 
     /**
+     * 所属高校的名称
+     */
+    private String belongName;
+
+    /**
      * 教师邮箱
      */
     private String email;

@@ -9,7 +9,7 @@
         <result column="comment_belong" jdbcType="BIGINT" property="belong"/>
         <result column="comment_send" jdbcType="BIGINT" property="send"/>
         <result column="comment_content" jdbcType="VARCHAR" property="content"/>
-        <result column="comment_read" jdbcType="TINYINT" property="read"/>
+        <result column="comment_read_status" jdbcType="TINYINT" property="readStatus"/>
         <result column="comment_status" jdbcType="TINYINT" property="status"/>
         <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
         <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
@@ -22,7 +22,7 @@
         comment_belong,
         comment_send,
         comment_content,
-        comment_read,
+        comment_read_status,
         comment_status,
         create_time,
         update_time,

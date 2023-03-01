@@ -34,9 +34,9 @@ public class TeacherPageVo implements Serializable {
     private Integer gender;
 
     /**
-     * 所属高校的id
+     * 所属高校的名称
      */
-    private Long belong;
+    private String belongName;
 
     /**
      * 教师状态

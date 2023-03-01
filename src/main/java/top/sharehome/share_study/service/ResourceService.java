@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import top.sharehome.share_study.model.dto.ResourceGetDto;
 import top.sharehome.share_study.model.dto.ResourcePageDto;
-import top.sharehome.share_study.model.dto.TeacherGetDto;
 import top.sharehome.share_study.model.entity.Resource;
 import top.sharehome.share_study.model.vo.ResourcePageVo;
 import top.sharehome.share_study.model.vo.ResourceUpdateVo;

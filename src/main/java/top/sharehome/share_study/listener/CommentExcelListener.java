@@ -3,9 +3,7 @@ package top.sharehome.share_study.listener;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.event.AnalysisEventListener;
 import org.springframework.stereotype.Component;
-import top.sharehome.share_study.mapper.CollegeMapper;
 import top.sharehome.share_study.mapper.CommentMapper;
-import top.sharehome.share_study.model.entity.College;
 import top.sharehome.share_study.model.entity.Comment;
 
 import javax.annotation.Resource;

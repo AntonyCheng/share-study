@@ -6,8 +6,6 @@
         <!--@Table share_study.t_college-->
         <id column="college_id" jdbcType="BIGINT" property="id"/>
         <result column="college_name" jdbcType="VARCHAR" property="name"/>
-        <result column="college_belong" jdbcType="VARCHAR" property="belong"/>
-        <result column="college_address" jdbcType="VARCHAR" property="address"/>
         <result column="college_code" jdbcType="VARCHAR" property="code"/>
         <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
         <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
@@ -17,8 +15,6 @@
         <!--@mbg.generated-->
         college_id,
         college_name,
-        college_belong,
-        college_address,
         college_code,
         create_time,
         update_time,

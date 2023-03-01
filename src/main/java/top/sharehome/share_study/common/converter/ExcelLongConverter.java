@@ -7,9 +7,9 @@ import com.alibaba.excel.metadata.GlobalConfiguration;
 import com.alibaba.excel.metadata.property.ExcelContentProperty;
 
 /**
- * @Description
- * @Author:AntonyCheng
- * @CreateTime:2023/2/28 09:39
+ * EasyExcel ID转换类
+ *
+ * @author AntonyCheng
  */
 
 public class ExcelLongConverter implements Converter<Long> {

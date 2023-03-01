@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -73,13 +74,14 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         // 查询用户输入的院校代码存不存在
         LambdaQueryWrapper<College> collegeLambdaQueryWrapper = new LambdaQueryWrapper<>();
         collegeLambdaQueryWrapper.eq(College::getCode, teacherRegisterVo.getCode());
-        Long resultFromCollege = collegeMapper.selectCount(collegeLambdaQueryWrapper);
-        if (resultFromCollege == 0) {
+        College resultCollege = collegeMapper.selectOne(collegeLambdaQueryWrapper);
+        if (resultCollege == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "没有该院校代码");
         }
 
         // 进行数据拷贝和插入
         Teacher teacher = new Teacher();
+        teacher.setBelong(resultCollege.getId());
         BeanUtils.copyProperties(teacherRegisterVo, teacher);
         teacher.setPassword(DigestUtil.md5Hex(teacher.getPassword() + SALT));
         int insertResult = teacherMapper.insert(teacher);
@@ -146,23 +148,23 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         queryWrapper.eq(Teacher::getAccount, accountBeforeLogin);
         Teacher teacher = teacherMapper.selectOne(queryWrapper);
         if (teacher == null) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_DOES_NOT_EXIST));
+            throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_DOES_NOT_EXIST), "用户账户不存在");
         }
 
         // 如果登录的状态处于封禁则无法登录
         if (teacher.getStatus() == 1) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_BANNED));
+            throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_BANNED), "用户账户被封禁");
         }
 
         // 如果登陆的身份为普通用户，就无法登录
         if (Objects.equals(teacher.getRole(), CommonConstant.DEFAULT_ROLE)) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED));
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "登陆的身份为普通用户，无法登录管理后台");
         }
 
         // 对比密码是否一致
         String passwordNeedCompare = DigestUtil.md5Hex(passwordBeforeLogin + SALT);
         if (!passwordNeedCompare.equals(teacher.getPassword())) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.WRONG_USER_PASSWORD));
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PASSWORD_VERIFICATION_FAILED), "密码校验失败");
         }
 
         // 信息脱敏
@@ -179,6 +181,8 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         teacherLoginDto.setScore(teacher.getScore());
         teacherLoginDto.setMessageNumber(teacher.getMessageTotal() - teacher.getMessageRead());
         teacherLoginDto.setRole(teacher.getRole());
+
+        // 向Session中存入登录状态
         request.getSession().setAttribute(CommonConstant.ADMIN_LOGIN_STATE, teacherLoginDto);
         return teacherLoginDto;
     }
@@ -186,16 +190,19 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public AdminGetSelfDto getSelf(Long id, HttpServletRequest request) {
+        // 鉴定操作者的权限
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
         if (!Objects.equals(teacherLoginDto.getId(), id)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "任何管理员都无法在个人信息页面获取其他管理员的信息");
         }
 
+        // 判断被操作数据是否为空
         Teacher teacher = teacherMapper.selectById(id);
         if (teacher == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_DOES_NOT_EXIST), "用户后台无数据");
         }
 
+        // 信息脱敏
         AdminGetSelfDto adminGetSelfDto = new AdminGetSelfDto();
         adminGetSelfDto.setId(teacher.getId());
         adminGetSelfDto.setAccount(teacher.getAccount());
@@ -212,22 +219,25 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void updateSelf(AdminUpdateSelfVo adminUpdateSelfVo, HttpServletRequest request) {
+        // 鉴定操作者的权限
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
         if (!Objects.equals(teacherLoginDto.getId(), adminUpdateSelfVo.getId())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "任何管理员都无法在个人信息页面修改其他管理员的信息");
         }
 
+        // 判断被操作数据是否为空
         Teacher teacher = teacherMapper.selectById(adminUpdateSelfVo.getId());
-
         if (teacher == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_DOES_NOT_EXIST), "用户后台无数据");
         }
 
+        // 对比密码是否一致
         String passwordNeedCompare = DigestUtil.md5Hex(adminUpdateSelfVo.getPassword() + SALT);
         if (!passwordNeedCompare.equals(teacher.getPassword())) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.WRONG_USER_PASSWORD));
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PASSWORD_VERIFICATION_FAILED), "密码校验失败");
         }
 
+        // 判断更新内容是否重复
         if (Objects.equals(adminUpdateSelfVo.getAccount(), teacher.getAccount())
                 && Objects.equals(adminUpdateSelfVo.getGender(), teacher.getGender())
                 && Objects.equals(adminUpdateSelfVo.getBelong(), teacher.getBelong())
@@ -237,6 +247,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             throw new CustomizeReturnException(R.failure(RCodeEnum.THE_UPDATE_DATA_IS_THE_SAME_AS_THE_BACKGROUND_DATA), "更新数据和库中数据相同");
         }
 
+        // 补全数据
         teacher.setAccount(adminUpdateSelfVo.getAccount());
         teacher.setName(adminUpdateSelfVo.getName());
         teacher.setAvatar(adminUpdateSelfVo.getAvatar());
@@ -255,24 +266,27 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public AdminGetDto getAdmin(Long id, HttpServletRequest request) {
+        // 鉴定操作者的权限
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
         if (!Objects.equals(teacherLoginDto.getRole(), CommonConstant.SUPER_ROLE)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "非超级管理员无法回显其他管理员信息");
         }
 
+        // 判断操作数据是否为空
         Teacher teacher = teacherMapper.selectById(id);
         if (teacher == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_DOES_NOT_EXIST), "用户后台无数据");
         }
 
+        // 判断被操作数据是否存在权限问题
         if (!Objects.equals(teacher.getRole(), CommonConstant.ADMIN_ROLE)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "获取信息的对象并非管理员");
         }
-
         if (Objects.equals(teacher.getRole(), CommonConstant.SUPER_ROLE)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "超管不能在此对自己进行数据回显");
         }
 
+        // 信息脱敏
         AdminGetDto adminGetDto = new AdminGetDto();
         adminGetDto.setId(teacher.getId());
         adminGetDto.setEmail(teacher.getEmail());
@@ -288,6 +302,13 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void updateAdmin(AdminUpdateVo adminUpdateVo, HttpServletRequest request) {
+        // 判断操作人是否有权操作
+        if (!(Objects.equals(adminUpdateVo.getRole(), CommonConstant.DEFAULT_ROLE)
+                || Objects.equals(adminUpdateVo.getRole(), CommonConstant.ADMIN_ROLE)
+                || Objects.equals(adminUpdateVo.getRole(), CommonConstant.SUPER_ROLE))) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH));
+        }
+
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
         if (!Objects.equals(teacherLoginDto.getRole(), CommonConstant.SUPER_ROLE)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "非超级管理员无法更改其他管理员信息");
@@ -341,7 +362,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             // 这里URLEncoder.encode可以防止中文乱码 当然和easyexcel没有关系
             String fileName = URLEncoder.encode("管理员信息", "UTF-8").replaceAll("\\+", "%20");
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
-            // 查询课程分类表所有的数据
+            // 查询管理员分类表所有的数据
             LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(Teacher::getRole, CommonConstant.ADMIN_ROLE)
                     .or()
@@ -526,13 +547,17 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public Page<TeacherPageDto> pageTeacher(Integer current, Integer pageSize, TeacherPageVo teacherPageVo) {
+        // 创建原始分页数据以及返回分页数据
         Page<Teacher> page = new Page<>(current, pageSize);
         Page<TeacherPageDto> returnResult = new Page<>(current, pageSize);
+
+        // 过滤分页对象
         LambdaQueryWrapper<Teacher> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper
                 .orderByDesc(Teacher::getRole)
                 .orderByAsc(Teacher::getCreateTime);
 
+        // 当不存在模糊查询时的分页操作
         if (teacherPageVo == null) {
             this.page(page, lambdaQueryWrapper);
             BeanUtils.copyProperties(page, returnResult, "records");
@@ -545,21 +570,47 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             return returnResult;
         }
 
-
+        // 当存在模糊查询时的分页操作
         lambdaQueryWrapper
                 .like(!StringUtils.isEmpty(teacherPageVo.getAccount()), Teacher::getAccount, teacherPageVo.getAccount())
                 .like(!StringUtils.isEmpty(teacherPageVo.getName()), Teacher::getName, teacherPageVo.getName())
                 .like(!ObjectUtils.isEmpty(teacherPageVo.getGender()), Teacher::getGender, teacherPageVo.getGender())
-                .like(!ObjectUtils.isEmpty(teacherPageVo.getBelong()), Teacher::getBelong, teacherPageVo.getBelong())
                 .like(!ObjectUtils.isEmpty(teacherPageVo.getStatus()), Teacher::getStatus, teacherPageVo.getStatus())
                 .like(!ObjectUtils.isEmpty(teacherPageVo.getRole()), Teacher::getRole, teacherPageVo.getRole());
         this.page(page, lambdaQueryWrapper);
         BeanUtils.copyProperties(page, returnResult, "records");
+
+        String belongName = teacherPageVo.getBelongName();
+        List<Long> collegeIds = new ArrayList<>();
+        if (!StringUtils.isEmpty(belongName)) {
+            LambdaQueryWrapper<College> belongNameLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            belongNameLambdaQueryWrapper.like(College::getName, belongName);
+            List<College> teachers = collegeMapper.selectList(belongNameLambdaQueryWrapper);
+            collegeIds = teachers.stream().map(College::getId).collect(Collectors.toList());
+        }
+        List<Long> finalCollegeIds = collegeIds;
+
+        if (finalCollegeIds.isEmpty()) {
+            page.setRecords(new ArrayList<>());
+        }
+
         List<TeacherPageDto> pageDtoList = page.getRecords().stream().map(record -> {
+            if (!finalCollegeIds.isEmpty() && !finalCollegeIds.contains(record.getBelong())) {
+                return null;
+            }
             TeacherPageDto teacherPageDto = new TeacherPageDto();
             BeanUtils.copyProperties(record, teacherPageDto);
+            LambdaQueryWrapper<College> collegeLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            collegeLambdaQueryWrapper.eq(College::getId, record.getBelong());
+            College college = collegeMapper.selectOne(collegeLambdaQueryWrapper);
+            if (college == null) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "该管理员所属高校不存在");
+            }
+            teacherPageDto.setBelongName(college.getName());
             return teacherPageDto;
         }).collect(Collectors.toList());
+        pageDtoList.removeIf(Objects::isNull);
+        returnResult.setTotal(pageDtoList.size());
         returnResult.setRecords(pageDtoList);
         return returnResult;
     }
@@ -567,14 +618,18 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public Page<AdminPageDto> pageAdmin(Integer current, Integer pageSize, AdminPageVo adminPageVo) {
+        // 创建原始分页数据以及返回分页数据
         Page<Teacher> page = new Page<>(current, pageSize);
         Page<AdminPageDto> returnResult = new Page<>(current, pageSize);
+
+        // 过滤分页对象
         LambdaQueryWrapper<Teacher> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper
                 .eq(Teacher::getRole, CommonConstant.ADMIN_ROLE)
                 .or()
                 .eq(Teacher::getRole, CommonConstant.SUPER_ROLE);
 
+        // 当不存在模糊查询时的分页操作
         if (adminPageVo == null) {
             lambdaQueryWrapper
                     .orderByDesc(Teacher::getRole)
@@ -590,22 +645,49 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             return returnResult;
         }
 
+        // 当存在模糊查询时的分页操作
         lambdaQueryWrapper
                 .like(!StringUtils.isEmpty(adminPageVo.getAccount()), Teacher::getAccount, adminPageVo.getAccount())
                 .like(!StringUtils.isEmpty(adminPageVo.getName()), Teacher::getName, adminPageVo.getName())
                 .like(!ObjectUtils.isEmpty(adminPageVo.getGender()), Teacher::getGender, adminPageVo.getGender())
-                .like(!ObjectUtils.isEmpty(adminPageVo.getBelong()), Teacher::getBelong, adminPageVo.getBelong())
                 .like(!ObjectUtils.isEmpty(adminPageVo.getStatus()), Teacher::getStatus, adminPageVo.getStatus())
                 .like(!ObjectUtils.isEmpty(adminPageVo.getRole()), Teacher::getRole, adminPageVo.getRole())
                 .orderByDesc(Teacher::getRole)
                 .orderByAsc(Teacher::getCreateTime);
         this.page(page, lambdaQueryWrapper);
         BeanUtils.copyProperties(page, returnResult, "records");
+
+        String belongName = adminPageVo.getBelongName();
+        List<Long> collegeIds = new ArrayList<>();
+        if (!StringUtils.isEmpty(belongName)) {
+            LambdaQueryWrapper<College> belongNameLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            belongNameLambdaQueryWrapper.like(College::getName, belongName);
+            List<College> teachers = collegeMapper.selectList(belongNameLambdaQueryWrapper);
+            collegeIds = teachers.stream().map(College::getId).collect(Collectors.toList());
+        }
+        List<Long> finalCollegeIds = collegeIds;
+
+        if (finalCollegeIds.isEmpty()) {
+            page.setRecords(new ArrayList<>());
+        }
+
         List<AdminPageDto> pageDtoList = page.getRecords().stream().map(record -> {
+            if (!finalCollegeIds.isEmpty() && !finalCollegeIds.contains(record.getBelong())) {
+                return null;
+            }
             AdminPageDto adminPageDto = new AdminPageDto();
             BeanUtils.copyProperties(record, adminPageDto);
+            LambdaQueryWrapper<College> collegeLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            collegeLambdaQueryWrapper.eq(College::getId, record.getBelong());
+            College college = collegeMapper.selectOne(collegeLambdaQueryWrapper);
+            if (college == null) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "该管理员所属高校不存在");
+            }
+            adminPageDto.setBelongName(college.getName());
             return adminPageDto;
         }).collect(Collectors.toList());
+        pageDtoList.removeIf(Objects::isNull);
+        returnResult.setTotal(pageDtoList.size());
         returnResult.setRecords(pageDtoList);
         return returnResult;
     }
