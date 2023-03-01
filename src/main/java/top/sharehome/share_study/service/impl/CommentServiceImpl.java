@@ -288,15 +288,15 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         BeanUtils.copyProperties(page, returnResult, "records");
 
         String belongName = commentPageVo.getBelongName();
-        List<Long> belongIds = new ArrayList<>();
+        List<Long> belongIds = null;
         if (!StringUtils.isEmpty(belongName)) {
             LambdaQueryWrapper<Teacher> belongNameLambdaQueryWrapper = new LambdaQueryWrapper<>();
             belongNameLambdaQueryWrapper.like(Teacher::getName, belongName);
             List<Teacher> teachers = teacherMapper.selectList(belongNameLambdaQueryWrapper);
             belongIds = teachers.stream().map(Teacher::getId).collect(Collectors.toList());
         }
-        String sendName = commentPageVo.getBelongName();
-        List<Long> sendIds = new ArrayList<>();
+        String sendName = commentPageVo.getSendName();
+        List<Long> sendIds = null;
         if (!StringUtils.isEmpty(sendName)) {
             LambdaQueryWrapper<Teacher> sendNameLambdaQueryWrapper = new LambdaQueryWrapper<>();
             sendNameLambdaQueryWrapper.like(Teacher::getName, sendName);
@@ -304,7 +304,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
             sendIds = teachers.stream().map(Teacher::getId).collect(Collectors.toList());
         }
         String resourceName = commentPageVo.getResourceName();
-        List<Long> resourceIds = new ArrayList<>();
+        List<Long> resourceIds = null;
         if (!StringUtils.isEmpty(resourceName)) {
             LambdaQueryWrapper<Resource> resourceNameLambdaQueryWrapper = new LambdaQueryWrapper<>();
             resourceNameLambdaQueryWrapper.like(Resource::getName, resourceName);
@@ -312,27 +312,29 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
             resourceIds = teachers.stream().map(Resource::getId).collect(Collectors.toList());
         }
 
-        List<Long> finalBelongIds = belongIds;
-        List<Long> finalSendIds = sendIds;
-        List<Long> finalResourceIds = resourceIds;
-        if (finalBelongIds.isEmpty()) {
+
+        if (belongIds != null && belongIds.isEmpty()) {
             page.setRecords(new ArrayList<>());
         }
-        if (finalSendIds.isEmpty()) {
+        if (sendIds != null && sendIds.isEmpty()) {
             page.setRecords(new ArrayList<>());
         }
-        if (finalResourceIds.isEmpty()) {
+        if (resourceIds != null && resourceIds.isEmpty()) {
             page.setRecords(new ArrayList<>());
         }
 
+        List<Long> finalBelongIds = belongIds;
+        List<Long> finalSendIds = sendIds;
+        List<Long> finalResourceIds = resourceIds;
+
         List<CommentPageDto> pageDtoList = page.getRecords().stream().map(record -> {
-            if (!finalBelongIds.isEmpty() && !finalBelongIds.contains(record.getBelong())) {
+            if (finalBelongIds != null && !finalBelongIds.isEmpty() && !finalBelongIds.contains(record.getBelong())) {
                 return null;
             }
-            if (!finalSendIds.isEmpty() && !finalSendIds.contains(record.getSend())) {
+            if (finalSendIds != null && !finalSendIds.isEmpty() && !finalSendIds.contains(record.getSend())) {
                 return null;
             }
-            if (!finalResourceIds.isEmpty() && !finalResourceIds.contains(record.getResource())) {
+            if (finalResourceIds != null && !finalResourceIds.isEmpty() && !finalResourceIds.contains(record.getResource())) {
                 return null;
             }
 
@@ -365,6 +367,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
             return commentPageDto;
         }).collect(Collectors.toList());
+        pageDtoList.removeIf(Objects::isNull);
+        returnResult.setTotal(pageDtoList.size());
         returnResult.setRecords(pageDtoList);
         return returnResult;
     }

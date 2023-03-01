@@ -284,8 +284,9 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             resourcePageDto.setBelongName(teacher.getName());
             return resourcePageDto;
         }).collect(Collectors.toList());
+        pageDtoList.removeIf(Objects::isNull);
+        returnResult.setTotal(pageDtoList.size());
         returnResult.setRecords(pageDtoList);
         return returnResult;
     }
-
 }
