@@ -2,6 +2,7 @@ package top.sharehome.share_study.service.impl;
 
 import com.alibaba.excel.EasyExcelFactory;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.commons.lang3.StringUtils;
@@ -89,6 +90,12 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
         if (teacherCount != 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_BIND_USER), "高校下还绑定着用户，无法删除");
         }
+
+        LambdaUpdateWrapper<College> collegeLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        collegeLambdaUpdateWrapper.eq(College::getId, id);
+        selectResult.setName(selectResult.getName() + "+" + System.currentTimeMillis());
+        selectResult.setCode(selectResult.getCode() + "+" + System.currentTimeMillis());
+        collegeMapper.update(selectResult, collegeLambdaUpdateWrapper);
 
         int deleteResult = collegeMapper.delete(collegeLambdaQueryWrapper);
 
@@ -201,10 +208,15 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
     public void deleteBath(List<Long> ids) {
         // 判断高校ID是否有对应的高校数据
         ids.forEach(id -> {
-            College college = this.getById(id);
-            if (college == null) {
+            College selectResult = this.getById(id);
+            if (selectResult == null) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "所要删除的高校ID中有不存在的高校");
             }
+            LambdaUpdateWrapper<College> collegeLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+            collegeLambdaUpdateWrapper.eq(College::getId, id);
+            selectResult.setName(selectResult.getName() + "+" + System.currentTimeMillis());
+            selectResult.setCode(selectResult.getCode() + "+" + System.currentTimeMillis());
+            collegeMapper.update(selectResult, collegeLambdaUpdateWrapper);
         });
         this.removeBatchByIds(ids);
     }

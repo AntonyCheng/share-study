@@ -4,6 +4,7 @@ import cn.hutool.core.util.DesensitizedUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.alibaba.excel.EasyExcelFactory;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.commons.lang3.ObjectUtils;
@@ -426,6 +427,11 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "教师管理页面不得删除管理员信息");
         }
 
+        LambdaUpdateWrapper<Teacher> teacherLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        teacherLambdaUpdateWrapper.eq(Teacher::getId, id);
+        selectResult.setAccount(selectResult.getAccount() + "+" + System.currentTimeMillis());
+        teacherMapper.update(selectResult, teacherLambdaUpdateWrapper);
+
         LambdaQueryWrapper<Resource> resourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
         resourceLambdaQueryWrapper.eq(Resource::getBelong, id);
         resourceMapper.delete(resourceLambdaQueryWrapper);
@@ -445,14 +451,18 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void deleteBatch(List<Long> ids) {
         ids.forEach(id -> {
-            Teacher teacher = this.getById(id);
-            if (teacher == null) {
-                throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS));
+            Teacher selectResult = this.getById(id);
+            if (selectResult == null) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "教师不存在，不需要进行下一步操作");
             }
-            if (Objects.equals(teacher.getRole(), CommonConstant.ADMIN_ROLE)
-                    || Objects.equals(teacher.getRole(), CommonConstant.SUPER_ROLE)) {
+            if (Objects.equals(selectResult.getRole(), CommonConstant.ADMIN_ROLE)
+                    || Objects.equals(selectResult.getRole(), CommonConstant.SUPER_ROLE)) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "教师管理页面不得删除管理员信息");
             }
+            LambdaUpdateWrapper<Teacher> teacherLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+            teacherLambdaUpdateWrapper.eq(Teacher::getId, id);
+            selectResult.setAccount(selectResult.getAccount() + "+" + System.currentTimeMillis());
+            teacherMapper.update(selectResult, teacherLambdaUpdateWrapper);
         });
 
         ids.forEach(id -> {
