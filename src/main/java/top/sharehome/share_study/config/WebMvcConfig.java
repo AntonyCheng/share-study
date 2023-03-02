@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import top.sharehome.share_study.common.jackson_mapper.JacksonObjectMapper;
 
 import java.util.List;
@@ -14,14 +15,14 @@ import java.util.List;
  * @author AntonyCheng
  */
 @Configuration
-public class WebMvcConfig extends WebMvcConfigurationSupport {
+public class WebMvcConfig implements WebMvcConfigurer {
     /**
      * 添加消息转换器，
      *
      * @param converters 转换器
      */
     @Override
-    protected void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
         // 创建消息转换器对象
         MappingJackson2HttpMessageConverter messageConverter = new MappingJackson2HttpMessageConverter();
         // 设置对象转换器，底层使用Jackson将Java对象转为Json
