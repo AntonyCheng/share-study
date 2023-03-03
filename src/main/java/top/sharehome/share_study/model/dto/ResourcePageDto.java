@@ -52,6 +52,11 @@ public class ResourcePageDto implements Serializable {
     private String url;
 
     /**
+     * 教学资料收藏数
+     */
+    private Integer score;
+
+    /**
      * 教学资料状态（0表示正常，1表示封禁）
      */
     private Integer status;

@@ -95,7 +95,7 @@ public class Teacher implements Serializable {
     @TableField(value = "teacher_score")
     @ApiModelProperty(value = "教师创作贡献度")
     @ExcelProperty(value = "教师创作贡献度", index = 8, converter = ExcelLongConverter.class)
-    private Long score;
+    private Integer score;
 
     /**
      * 消息总数
@@ -103,7 +103,7 @@ public class Teacher implements Serializable {
     @TableField(value = "teacher_message_total")
     @ApiModelProperty(value = "消息总数")
     @ExcelProperty(value = "消息总数", index = 9, converter = ExcelLongConverter.class)
-    private Long messageTotal;
+    private Integer messageTotal;
 
     /**
      * 消息已读数
@@ -111,7 +111,7 @@ public class Teacher implements Serializable {
     @TableField(value = "teacher_message_read")
     @ApiModelProperty(value = "消息已读数")
     @ExcelProperty(value = "消息已读数", index = 10, converter = ExcelLongConverter.class)
-    private Long messageRead;
+    private Integer messageRead;
 
     /**
      * 教师状态（0表示正常，1表示封禁）

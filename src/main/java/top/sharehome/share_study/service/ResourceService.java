@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import top.sharehome.share_study.model.dto.ResourceGetDto;
 import top.sharehome.share_study.model.dto.ResourcePageDto;
+import top.sharehome.share_study.model.dto.UserResourcePageDto;
 import top.sharehome.share_study.model.entity.Resource;
 import top.sharehome.share_study.model.vo.ResourcePageVo;
 import top.sharehome.share_study.model.vo.ResourceUpdateVo;
+import top.sharehome.share_study.model.vo.UserResourcePageVo;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -68,4 +70,16 @@ public interface ResourceService extends IService<Resource> {
      * @return 返回分页结果
      */
     Page<ResourcePageDto> pageResource(Integer current, Integer pageSize, ResourcePageVo resourcePageVo);
+
+    /**
+     * 普通用户的教学资料分页
+     *
+     * @param id                 普通用户的ID
+     * @param current            当前页数
+     * @param pageSize           页面条数
+     * @param request            获取操作者的登录状态
+     * @param userResourcePageVo 模糊查询条件类
+     * @return 返回分页结果
+     */
+    Page<UserResourcePageDto> getUserResourcePage(Long id, Integer current, Integer pageSize, HttpServletRequest request, UserResourcePageVo userResourcePageVo);
 }

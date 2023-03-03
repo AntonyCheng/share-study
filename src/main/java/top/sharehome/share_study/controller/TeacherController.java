@@ -130,7 +130,7 @@ public class TeacherController {
 
         // 校验性别数据格式
         if (!(teacherRegisterVo.getGender() == 0 || teacherRegisterVo.getGender() == 1)) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH),"不满足性别二元性");
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH), "不满足性别二元性");
         }
 
         teacherService.register(teacherRegisterVo);
@@ -179,6 +179,24 @@ public class TeacherController {
 
         return R.success(teacherLoginDto, "登录成功");
     }
+
+    /**
+     * 管理员获取登录状态（需要有登录状态才能获取）
+     *
+     * @param id      前端传来的操作者的id
+     * @param request 获取Session中的登录状态
+     * @return 返回最新的登录状态
+     */
+    @GetMapping("/getAdminLogin/{id}")
+    @ApiOperation("用户获取登录状态")
+    public R<TeacherLoginDto> getAdminLogin(@PathVariable("id") Long id, HttpServletRequest request) {
+        if (id == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "操作者id为空，操作失败");
+        }
+        TeacherLoginDto teacherLoginDto = teacherService.getAdminLogin(id, request);
+        return R.success(teacherLoginDto, "状态存在，更新状态成功");
+    }
+
 
     /**
      * 用户退出接口（无需权限）

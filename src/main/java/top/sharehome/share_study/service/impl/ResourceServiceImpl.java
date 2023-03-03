@@ -15,17 +15,21 @@ import top.sharehome.share_study.common.exception_handler.customize.CustomizeRet
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeTransactionException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
+import top.sharehome.share_study.mapper.CollegeMapper;
 import top.sharehome.share_study.mapper.CommentMapper;
 import top.sharehome.share_study.mapper.ResourceMapper;
 import top.sharehome.share_study.mapper.TeacherMapper;
 import top.sharehome.share_study.model.dto.ResourceGetDto;
 import top.sharehome.share_study.model.dto.ResourcePageDto;
 import top.sharehome.share_study.model.dto.TeacherLoginDto;
+import top.sharehome.share_study.model.dto.UserResourcePageDto;
+import top.sharehome.share_study.model.entity.College;
 import top.sharehome.share_study.model.entity.Comment;
 import top.sharehome.share_study.model.entity.Resource;
 import top.sharehome.share_study.model.entity.Teacher;
 import top.sharehome.share_study.model.vo.ResourcePageVo;
 import top.sharehome.share_study.model.vo.ResourceUpdateVo;
+import top.sharehome.share_study.model.vo.UserResourcePageVo;
 import top.sharehome.share_study.service.ResourceService;
 
 import javax.servlet.http.HttpServletRequest;
@@ -53,6 +57,9 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
 
     @javax.annotation.Resource
     private CommentMapper commentMapper;
+
+    @javax.annotation.Resource
+    private CollegeMapper collegeMapper;
 
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
@@ -228,15 +235,17 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     public Page<ResourcePageDto> pageResource(Integer current, Integer pageSize, ResourcePageVo resourcePageVo) {
         Page<Resource> page = new Page<>(current, pageSize);
         Page<ResourcePageDto> returnResult = new Page<>(current, pageSize);
-
+        LambdaQueryWrapper<Resource> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper
+                .orderByAsc(Resource::getCreateTime);
         if (resourcePageVo == null) {
-            this.page(page);
+            this.page(page, lambdaQueryWrapper);
             BeanUtils.copyProperties(page, returnResult, "records");
-            List<ResourcePageDto> pageDtoList = page.getRecords().stream().map(record -> {
+            List<ResourcePageDto> pageDtoList = page.getRecords().stream().map(resource -> {
                 ResourcePageDto resourcePageDto = new ResourcePageDto();
-                BeanUtils.copyProperties(record, resourcePageDto);
+                BeanUtils.copyProperties(resource, resourcePageDto);
                 LambdaQueryWrapper<Teacher> resourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
-                resourceLambdaQueryWrapper.eq(Teacher::getId, record.getBelong());
+                resourceLambdaQueryWrapper.eq(Teacher::getId, resource.getBelong());
                 Teacher teacher = teacherMapper.selectOne(resourceLambdaQueryWrapper);
                 if (teacher == null) {
                     throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "教学资料所属教师不存在");
@@ -248,12 +257,10 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             return returnResult;
         }
 
-        LambdaQueryWrapper<Resource> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper
                 .like(!StringUtils.isEmpty(resourcePageVo.getInfo()), Resource::getInfo, resourcePageVo.getInfo())
                 .like(!StringUtils.isEmpty(resourcePageVo.getName()), Resource::getName, resourcePageVo.getName())
-                .like(!ObjectUtils.isEmpty(resourcePageVo.getStatus()), Resource::getStatus, resourcePageVo.getStatus())
-                .orderByAsc(Resource::getCreateTime);
+                .like(!ObjectUtils.isEmpty(resourcePageVo.getStatus()), Resource::getStatus, resourcePageVo.getStatus());
         this.page(page, lambdaQueryWrapper);
         BeanUtils.copyProperties(page, returnResult, "records");
 
@@ -285,6 +292,110 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             }
             resourcePageDto.setBelongName(teacher.getName());
             return resourcePageDto;
+        }).collect(Collectors.toList());
+        pageDtoList.removeIf(Objects::isNull);
+        returnResult.setTotal(pageDtoList.size());
+        returnResult.setRecords(pageDtoList);
+        return returnResult;
+    }
+
+    @Override
+    public Page<UserResourcePageDto> getUserResourcePage(Long id, Integer current, Integer pageSize, HttpServletRequest request, UserResourcePageVo userResourcePageVo) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
+        }
+        Page<Resource> page = new Page<>(current, pageSize);
+        Page<UserResourcePageDto> returnResult = new Page<>(current, pageSize);
+        LambdaQueryWrapper<Resource> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper
+                .eq(Resource::getBelong, id)
+                .orderByAsc(Resource::getCreateTime);
+
+        if (userResourcePageVo == null) {
+            this.page(page, lambdaQueryWrapper);
+            BeanUtils.copyProperties(page, returnResult, "records");
+            List<UserResourcePageDto> pageDtoList = page.getRecords().stream().map(resource -> {
+                Integer status = resource.getStatus();
+                if (!Objects.equals(teacherLoginDto.getId(), id) && status == 1) {
+                    return null;
+                }
+                UserResourcePageDto userResourcePageDto = new UserResourcePageDto();
+
+                Teacher teacher = teacherMapper.selectById(resource.getBelong());
+                if (teacher == null) {
+                    throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS));
+                }
+                userResourcePageDto.setUserId(teacher.getId());
+                userResourcePageDto.setUserName(teacher.getName());
+                userResourcePageDto.setUserAvatarUrl(teacher.getAvatar());
+                College college = collegeMapper.selectById(teacher.getBelong());
+                if (college == null) {
+                    throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS));
+                }
+                userResourcePageDto.setCollegeName(college.getName());
+
+                userResourcePageDto.setResourceStatus(status);
+                userResourcePageDto.setResourceId(resource.getId());
+                userResourcePageDto.setResourceName(resource.getName());
+                if (status == 0) {
+                    userResourcePageDto.setResourceInfo(resource.getInfo());
+                    userResourcePageDto.setResourceScore(resource.getScore());
+                    userResourcePageDto.setResourceUrl(resource.getUrl());
+                }
+                LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+                commentLambdaQueryWrapper.eq(Comment::getResource, resource.getId());
+                Integer commentCount = Math.toIntExact(commentMapper.selectCount(commentLambdaQueryWrapper));
+                userResourcePageDto.setCommentCount(commentCount);
+
+                return userResourcePageDto;
+            }).collect(Collectors.toList());
+            pageDtoList.removeIf(Objects::isNull);
+            returnResult.setTotal(pageDtoList.size());
+            returnResult.setRecords(pageDtoList);
+            return returnResult;
+        }
+
+        lambdaQueryWrapper
+                .like(!StringUtils.isEmpty(userResourcePageVo.getResourceName()), Resource::getName, userResourcePageVo.getResourceName())
+                .like(!StringUtils.isEmpty(userResourcePageVo.getResourceInfo()), Resource::getInfo, userResourcePageVo.getResourceInfo());
+
+        this.page(page, lambdaQueryWrapper);
+        BeanUtils.copyProperties(page, returnResult, "records");
+        List<UserResourcePageDto> pageDtoList = page.getRecords().stream().map(resource -> {
+            Integer status = resource.getStatus();
+            if (!Objects.equals(teacherLoginDto.getId(), id) && status == 1) {
+                return null;
+            }
+            UserResourcePageDto userResourcePageDto = new UserResourcePageDto();
+
+            Teacher teacher = teacherMapper.selectById(resource.getBelong());
+            if (teacher == null) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS));
+            }
+            userResourcePageDto.setUserId(teacher.getId());
+            userResourcePageDto.setUserName(teacher.getName());
+            userResourcePageDto.setUserAvatarUrl(teacher.getAvatar());
+            College college = collegeMapper.selectById(teacher.getBelong());
+            if (college == null) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS));
+            }
+            userResourcePageDto.setCollegeName(college.getName());
+
+            userResourcePageDto.setResourceStatus(status);
+            userResourcePageDto.setResourceId(resource.getId());
+            userResourcePageDto.setResourceName(resource.getName());
+            if (status == 0) {
+                userResourcePageDto.setResourceInfo(resource.getInfo());
+                userResourcePageDto.setResourceScore(resource.getScore());
+                userResourcePageDto.setResourceUrl(resource.getUrl());
+            }
+            LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            commentLambdaQueryWrapper.eq(Comment::getResource, resource.getId());
+            Integer commentCount = Math.toIntExact(commentMapper.selectCount(commentLambdaQueryWrapper));
+            userResourcePageDto.setCommentCount(commentCount);
+
+            return userResourcePageDto;
         }).collect(Collectors.toList());
         pageDtoList.removeIf(Objects::isNull);
         returnResult.setTotal(pageDtoList.size());

@@ -139,4 +139,23 @@ public interface TeacherService extends IService<Teacher> {
      * @return 返回分页结果
      */
     Page<TeacherPageDto> pageTeacher(Integer current, Integer pageSize, TeacherPageVo teacherPageVo);
+
+    /**
+     * 管理员获取登录状态（需要有登录状态才能获取）
+     *
+     * @param id      前端传来的操作者的id
+     * @param request 获取Session中的登录状态
+     * @return 返回最新的登录状态
+     */
+    TeacherLoginDto getAdminLogin(Long id, HttpServletRequest request);
+
+    /**
+     * 普通用户获取登录状态（需要有登录状态才能获取）
+     *
+     * @param id      前端传来的操作者的id
+     * @param request 获取Session中的登录状态
+     * @return 返回最新的登录状态
+     */
+    TeacherLoginDto getUserLogin(Long id, HttpServletRequest request);
+
 }

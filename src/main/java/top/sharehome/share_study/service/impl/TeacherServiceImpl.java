@@ -575,9 +575,9 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         if (teacherPageVo == null) {
             this.page(page, lambdaQueryWrapper);
             BeanUtils.copyProperties(page, returnResult, "records");
-            List<TeacherPageDto> pageDtoList = page.getRecords().stream().map(record -> {
+            List<TeacherPageDto> pageDtoList = page.getRecords().stream().map(teacher -> {
                 TeacherPageDto teacherPageDto = new TeacherPageDto();
-                BeanUtils.copyProperties(record, teacherPageDto);
+                BeanUtils.copyProperties(teacher, teacherPageDto);
                 return teacherPageDto;
             }).collect(Collectors.toList());
             returnResult.setRecords(pageDtoList);
@@ -608,14 +608,14 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             page.setRecords(new ArrayList<>());
         }
 
-        List<TeacherPageDto> pageDtoList = page.getRecords().stream().map(record -> {
-            if (!finalCollegeIds.isEmpty() && !finalCollegeIds.contains(record.getBelong())) {
+        List<TeacherPageDto> pageDtoList = page.getRecords().stream().map(teacher -> {
+            if (!finalCollegeIds.isEmpty() && !finalCollegeIds.contains(teacher.getBelong())) {
                 return null;
             }
             TeacherPageDto teacherPageDto = new TeacherPageDto();
-            BeanUtils.copyProperties(record, teacherPageDto);
+            BeanUtils.copyProperties(teacher, teacherPageDto);
             LambdaQueryWrapper<College> collegeLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            collegeLambdaQueryWrapper.eq(College::getId, record.getBelong());
+            collegeLambdaQueryWrapper.eq(College::getId, teacher.getBelong());
             College college = collegeMapper.selectOne(collegeLambdaQueryWrapper);
             if (college == null) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "该管理员所属高校不存在");
@@ -627,6 +627,69 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         returnResult.setTotal(pageDtoList.size());
         returnResult.setRecords(pageDtoList);
         return returnResult;
+    }
+
+    @Override
+    public TeacherLoginDto getAdminLogin(Long id, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，管理员未登录");
+        }
+
+        if (!Objects.equals(teacherLoginDto.getId(), id)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "操作者和登录状态中信息不相符");
+        }
+
+        Teacher teacher = teacherMapper.selectById(teacherLoginDto.getId());
+        TeacherLoginDto adminLoginDto = new TeacherLoginDto();
+        adminLoginDto.setId(teacher.getId());
+        adminLoginDto.setAccount(teacher.getAccount());
+        String name = DesensitizedUtil.chineseName(teacher.getName());
+        adminLoginDto.setName(name);
+        adminLoginDto.setAvatar(teacher.getAvatar());
+        adminLoginDto.setGender(teacher.getGender());
+        String collegeName = collegeMapper.selectById(teacher.getBelong()).getName();
+        adminLoginDto.setCollegeName(collegeName);
+        adminLoginDto.setEmail(teacher.getEmail());
+        adminLoginDto.setScore(teacher.getScore());
+        adminLoginDto.setMessageNumber(teacher.getMessageTotal() - teacher.getMessageRead());
+        adminLoginDto.setRole(teacher.getRole());
+
+        // 向Session中更新登录状态
+        request.getSession().setAttribute(CommonConstant.ADMIN_LOGIN_STATE, adminLoginDto);
+
+        return adminLoginDto;
+    }
+
+    @Override
+    public TeacherLoginDto getUserLogin(Long id, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
+        }
+
+        if (!Objects.equals(teacherLoginDto.getId(), id)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "操作者和登录状态中信息不相符");
+        }
+
+        Teacher teacher = teacherMapper.selectById(teacherLoginDto.getId());
+        TeacherLoginDto userLoginDto = new TeacherLoginDto();
+        userLoginDto.setId(teacher.getId());
+        userLoginDto.setAccount(teacher.getAccount());
+        userLoginDto.setName(teacher.getName());
+        userLoginDto.setAvatar(teacher.getAvatar());
+        userLoginDto.setGender(teacher.getGender());
+        String collegeName = collegeMapper.selectById(teacher.getBelong()).getName();
+        userLoginDto.setCollegeName(collegeName);
+        userLoginDto.setEmail(teacher.getEmail());
+        userLoginDto.setScore(teacher.getScore());
+        userLoginDto.setMessageNumber(teacher.getMessageTotal() - teacher.getMessageRead());
+        userLoginDto.setRole(teacher.getRole());
+
+        // 向Session中更新登录状态
+        request.getSession().setAttribute(CommonConstant.USER_LOGIN_STATE, userLoginDto);
+
+        return userLoginDto;
     }
 
     @Override
@@ -650,9 +713,9 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
                     .orderByAsc(Teacher::getCreateTime);
             this.page(page, lambdaQueryWrapper);
             BeanUtils.copyProperties(page, returnResult, "records");
-            List<AdminPageDto> pageDtoList = page.getRecords().stream().map(record -> {
+            List<AdminPageDto> pageDtoList = page.getRecords().stream().map(teacher -> {
                 AdminPageDto adminPageDto = new AdminPageDto();
-                BeanUtils.copyProperties(record, adminPageDto);
+                BeanUtils.copyProperties(teacher, adminPageDto);
                 return adminPageDto;
             }).collect(Collectors.toList());
             returnResult.setRecords(pageDtoList);
@@ -685,14 +748,14 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             page.setRecords(new ArrayList<>());
         }
 
-        List<AdminPageDto> pageDtoList = page.getRecords().stream().map(record -> {
-            if (!finalCollegeIds.isEmpty() && !finalCollegeIds.contains(record.getBelong())) {
+        List<AdminPageDto> pageDtoList = page.getRecords().stream().map(teacher -> {
+            if (!finalCollegeIds.isEmpty() && !finalCollegeIds.contains(teacher.getBelong())) {
                 return null;
             }
             AdminPageDto adminPageDto = new AdminPageDto();
-            BeanUtils.copyProperties(record, adminPageDto);
+            BeanUtils.copyProperties(teacher, adminPageDto);
             LambdaQueryWrapper<College> collegeLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            collegeLambdaQueryWrapper.eq(College::getId, record.getBelong());
+            collegeLambdaQueryWrapper.eq(College::getId, teacher.getBelong());
             College college = collegeMapper.selectOne(collegeLambdaQueryWrapper);
             if (college == null) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "该管理员所属高校不存在");

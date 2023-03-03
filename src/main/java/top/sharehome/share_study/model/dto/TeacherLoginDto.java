@@ -50,19 +50,19 @@ public class TeacherLoginDto implements Serializable {
     private String collegeName;
 
     /**
-     * 教师邮箱（需要隐藏）
+     * 教师邮箱
      */
     private String email;
 
     /**
      * 贡献度
      */
-    private Long score;
+    private Integer score;
 
     /**
      * 消息未读数
      */
-    private Long messageNumber;
+    private Integer messageNumber;
 
     /**
      * 用户角色（0普通用户，1管理员用户，2超级管理员）

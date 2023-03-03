@@ -67,11 +67,19 @@ public class Resource implements Serializable {
     private String url;
 
     /**
+     * 教学资料收藏数
+     */
+    @TableField(value = "resource_score")
+    @ApiModelProperty(value = "教学资料收藏数")
+    @ExcelProperty(value = "教学资料收藏数", index = 5)
+    private Integer score;
+
+    /**
      * 教学资料状态（0表示正常，1表示封禁）
      */
     @TableField(value = "resource_status", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "教学资料状态（0表示正常，1表示封禁）")
-    @ExcelProperty(value = "教学资料状态", index = 5)
+    @ExcelProperty(value = "教学资料状态", index = 6)
     private Integer status;
 
     /**
@@ -79,7 +87,7 @@ public class Resource implements Serializable {
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "教学资料发布时间")
-    @ExcelProperty(value = "教学资料发布时间", index = 6, converter = ExcelLocalDateTimeConverter.class)
+    @ExcelProperty(value = "教学资料发布时间", index = 7, converter = ExcelLocalDateTimeConverter.class)
     private LocalDateTime createTime;
 
     /**
@@ -87,7 +95,7 @@ public class Resource implements Serializable {
      */
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     @ApiModelProperty(value = "教学资料修改时间")
-    @ExcelProperty(value = "教学资料修改时间", index = 7, converter = ExcelLocalDateTimeConverter.class)
+    @ExcelProperty(value = "教学资料修改时间", index = 8, converter = ExcelLocalDateTimeConverter.class)
     private LocalDateTime updateTime;
 
     /**
@@ -96,7 +104,7 @@ public class Resource implements Serializable {
     @TableField(value = "is_deleted", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "逻辑删除（0表示未删除，1表示已删除）")
     @TableLogic
-    @ExcelProperty(value = "逻辑删除", index = 8)
+    @ExcelProperty(value = "逻辑删除", index = 9)
     private Integer isDeleted;
 
     public static final String COL_RESOURCE_ID = "resource_id";

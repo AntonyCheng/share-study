@@ -54,7 +54,7 @@ public class TeacherRegisterVo implements Serializable {
      * 教师性别（0表示男性，1表示女性）
      */
     @ApiModelProperty(value = "教师性别（0表示男性，1表示女性）")
-    private Byte gender;
+    private Integer gender;
 
     /**
      * 所属高校的院校代码

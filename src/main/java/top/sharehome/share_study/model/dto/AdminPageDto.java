@@ -61,7 +61,7 @@ public class AdminPageDto implements Serializable {
     /**
      * 贡献度
      */
-    private Long score;
+    private Integer score;
 
     /**
      * 教师状态
