@@ -19,10 +19,7 @@ import top.sharehome.share_study.mapper.CollegeMapper;
 import top.sharehome.share_study.mapper.CommentMapper;
 import top.sharehome.share_study.mapper.ResourceMapper;
 import top.sharehome.share_study.mapper.TeacherMapper;
-import top.sharehome.share_study.model.dto.ResourceGetDto;
-import top.sharehome.share_study.model.dto.ResourcePageDto;
-import top.sharehome.share_study.model.dto.TeacherLoginDto;
-import top.sharehome.share_study.model.dto.UserResourcePageDto;
+import top.sharehome.share_study.model.dto.*;
 import top.sharehome.share_study.model.entity.College;
 import top.sharehome.share_study.model.entity.Comment;
 import top.sharehome.share_study.model.entity.Resource;
@@ -30,6 +27,8 @@ import top.sharehome.share_study.model.entity.Teacher;
 import top.sharehome.share_study.model.vo.ResourcePageVo;
 import top.sharehome.share_study.model.vo.ResourceUpdateVo;
 import top.sharehome.share_study.model.vo.UserResourcePageVo;
+import top.sharehome.share_study.model.vo.UserResourceUpdateVo;
+import top.sharehome.share_study.service.FileOssService;
 import top.sharehome.share_study.service.ResourceService;
 
 import javax.servlet.http.HttpServletRequest;
@@ -60,6 +59,9 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
 
     @javax.annotation.Resource
     private CollegeMapper collegeMapper;
+
+    @javax.annotation.Resource
+    private FileOssService fileOssService;
 
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
@@ -119,6 +121,8 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         if (deleteResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "教学资料数据删除失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
+
+        fileOssService.delete(selectResult.getUrl());
     }
 
     @Override
@@ -129,7 +133,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "非管理员不能进行删除操作");
         }
 
-        ids.forEach(id -> {
+        List<String> urls = ids.stream().map(id -> {
             Resource selectResult = resourceMapper.selectById(id);
             if (selectResult == null) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.RESOURCE_NOT_EXISTS), "教学资料不存在，不需要进行下一步操作");
@@ -145,7 +149,9 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
                     && !Objects.equals(targetTeacher.getRole(), CommonConstant.DEFAULT_ROLE))) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "管理员没有权限在此删除其他管理员和超级管理员的教学资料");
             }
-        });
+
+            return selectResult.getUrl();
+        }).collect(Collectors.toList());
 
         ids.forEach(id -> {
             LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -157,11 +163,15 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         if (deleteResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "教学资料数据删除失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
+
+        urls.forEach(url -> {
+            fileOssService.delete(url);
+        });
     }
 
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
-    public ResourceGetDto get(Long id, HttpServletRequest request) {
+    public ResourceGetDto getResource(Long id, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
         if (Objects.equals(teacherLoginDto.getRole(), CommonConstant.DEFAULT_ROLE)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "非管理员不能进行删除操作");
@@ -401,5 +411,117 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         returnResult.setTotal(pageDtoList.size());
         returnResult.setRecords(pageDtoList);
         return returnResult;
+    }
+
+    @Override
+    public void deleteUserResource(Long id, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+
+        if (!Objects.equals(teacherLoginDto.getId(), resourceMapper.selectById(id).getBelong())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "不能在用户详情界面删除其他用户的教学资料");
+        }
+
+        LambdaQueryWrapper<Resource> resourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        resourceLambdaQueryWrapper.eq(Resource::getId, id);
+
+        Resource selectResult = resourceMapper.selectOne(resourceLambdaQueryWrapper);
+        if (selectResult == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.RESOURCE_NOT_EXISTS), "教学资料不存在，不需要进行下一步操作");
+        }
+
+        Teacher targetTeacher = teacherMapper.selectById(selectResult.getBelong());
+        if (targetTeacher == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "发表该教学资料的老师不存在");
+        }
+
+        if (!Objects.equals(targetTeacher.getId(), teacherLoginDto.getId())
+                && (Objects.equals(teacherLoginDto.getRole(), CommonConstant.ADMIN_ROLE)
+                && !Objects.equals(targetTeacher.getRole(), CommonConstant.DEFAULT_ROLE))) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "管理员没有权限在此删除其他管理员和超级管理员的教学资料");
+        }
+
+        LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        commentLambdaQueryWrapper.eq(Comment::getResource, id);
+        commentMapper.delete(commentLambdaQueryWrapper);
+
+        int deleteResult = resourceMapper.delete(resourceLambdaQueryWrapper);
+
+        if (deleteResult == 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "教学资料数据删除失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+        }
+
+        fileOssService.delete(selectResult.getUrl());
+    }
+
+    @Override
+    public UserResourceGetDto getUserResource(Long id, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (Objects.isNull(teacherLoginDto)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "用户未登录");
+        }
+        if (!Objects.equals(teacherLoginDto.getId(), resourceMapper.selectById(id).getBelong())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "任何用户都无法在个人信息页面获取其他用户的教学资料信息");
+        }
+
+        LambdaQueryWrapper<Resource> resourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        resourceLambdaQueryWrapper.eq(Resource::getId, id);
+
+        Resource selectResult = resourceMapper.selectOne(resourceLambdaQueryWrapper);
+        if (selectResult == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.RESOURCE_NOT_EXISTS), "教学资料不存在，不需要进行下一步操作");
+        }
+
+        Teacher targetTeacher = teacherMapper.selectById(selectResult.getBelong());
+        if (targetTeacher == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "发表该教学资料的老师不存在");
+        }
+
+        UserResourceGetDto userResourceGetDto = new UserResourceGetDto();
+        userResourceGetDto.setId(selectResult.getId());
+        userResourceGetDto.setName(selectResult.getName());
+        userResourceGetDto.setInfo(selectResult.getInfo());
+        userResourceGetDto.setUrl(selectResult.getUrl());
+        return userResourceGetDto;
+    }
+
+    @Override
+    public void updateUserResource(UserResourceUpdateVo userResourceUpdateVo, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (Objects.isNull(teacherLoginDto)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "用户未登录");
+        }
+        if (!Objects.equals(teacherLoginDto.getId(), resourceMapper.selectById(userResourceUpdateVo.getId()).getBelong())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "任何用户都无法在个人信息页面获取其他用户的教学资料信息");
+        }
+
+        Resource resultFromDatabase = resourceMapper.selectById(userResourceUpdateVo.getId());
+        if (resultFromDatabase == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.RESOURCE_NOT_EXISTS), "教学资料不存在，不需要进行下一步操作");
+        }
+        if (Objects.equals(userResourceUpdateVo.getName(), resultFromDatabase.getName())
+                && Objects.equals(userResourceUpdateVo.getInfo(), resultFromDatabase.getInfo())
+                && Objects.equals(userResourceUpdateVo.getUrl(), resultFromDatabase.getUrl())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.THE_UPDATE_DATA_IS_THE_SAME_AS_THE_BACKGROUND_DATA), "更新数据和库中数据相同");
+        }
+
+        Teacher targetTeacher = teacherMapper.selectById(resultFromDatabase.getBelong());
+        if (targetTeacher == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "发表该教学资料的老师不存在");
+        }
+
+        if (!Objects.equals(resultFromDatabase.getUrl(), userResourceUpdateVo.getUrl())) {
+            fileOssService.delete(resultFromDatabase.getUrl());
+        }
+
+        resultFromDatabase.setName(userResourceUpdateVo.getName());
+        resultFromDatabase.setInfo(userResourceUpdateVo.getInfo());
+        resultFromDatabase.setUrl(userResourceUpdateVo.getUrl());
+
+        int updateResult = resourceMapper.updateById(resultFromDatabase);
+
+        // 判断数据库插入结果
+        if (updateResult == 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "修改教学资料失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+        }
     }
 }

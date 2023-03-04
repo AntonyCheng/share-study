@@ -91,7 +91,7 @@ public class ResourceController {
         if (ObjectUtils.isEmpty(id)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "教学资料ID为空");
         }
-        ResourceGetDto resourceGetDto = resourceService.get(id, request);
+        ResourceGetDto resourceGetDto = resourceService.getResource(id, request);
 
         return R.success(resourceGetDto, "回显成功");
     }

@@ -4,11 +4,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import top.sharehome.share_study.model.dto.ResourceGetDto;
 import top.sharehome.share_study.model.dto.ResourcePageDto;
+import top.sharehome.share_study.model.dto.UserResourceGetDto;
 import top.sharehome.share_study.model.dto.UserResourcePageDto;
 import top.sharehome.share_study.model.entity.Resource;
 import top.sharehome.share_study.model.vo.ResourcePageVo;
 import top.sharehome.share_study.model.vo.ResourceUpdateVo;
 import top.sharehome.share_study.model.vo.UserResourcePageVo;
+import top.sharehome.share_study.model.vo.UserResourceUpdateVo;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -51,7 +53,7 @@ public interface ResourceService extends IService<Resource> {
      * @param request 获取登录的Session状态
      * @return 返回教学资料可修改信息
      */
-    ResourceGetDto get(Long id, HttpServletRequest request);
+    ResourceGetDto getResource(Long id, HttpServletRequest request);
 
     /**
      * 管理员修改教学资料信息接口
@@ -82,4 +84,29 @@ public interface ResourceService extends IService<Resource> {
      * @return 返回分页结果
      */
     Page<UserResourcePageDto> getUserResourcePage(Long id, Integer current, Integer pageSize, HttpServletRequest request, UserResourcePageVo userResourcePageVo);
+
+    /**
+     * 普通用户删除教学资料
+     *
+     * @param id      教学资料的ID
+     * @param request 获取操作者的登录状态
+     */
+    void deleteUserResource(Long id, HttpServletRequest request);
+
+    /**
+     * 普通用户获取教学资料信息接口（s/a/u）
+     *
+     * @param id      教学资料ID
+     * @param request 获取登录的Session状态
+     * @return 返回教学资料可修改信息
+     */
+    UserResourceGetDto getUserResource(Long id, HttpServletRequest request);
+
+    /**
+     * 普通用户修改教学资料信息接口（s/a/u）
+     *
+     * @param userResourceUpdateVo 普通用户更新教学资料信息Vo实体
+     * @param request          获取Session中的登录状态
+     */
+    void updateUserResource(UserResourceUpdateVo userResourceUpdateVo, HttpServletRequest request);
 }

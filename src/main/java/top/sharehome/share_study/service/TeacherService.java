@@ -158,4 +158,20 @@ public interface TeacherService extends IService<Teacher> {
      */
     TeacherLoginDto getUserLogin(Long id, HttpServletRequest request);
 
+    /**
+     * 普通用户获取自己信息接口（s/a/u）
+     *
+     * @param id      普通用户ID
+     * @param request 获取Session中登录状态
+     * @return 返回普通用户自己的可修改信息
+     */
+    UserGetInfoDto getUserSelf(Long id, HttpServletRequest request);
+
+    /**
+     * 普通用户修改自己信息接口（s/a/u）
+     *
+     * @param userUpdateInfoVo 普通用户更新自己信息Vo实体
+     * @param request          获取Session中的登录状态
+     */
+    void updateUserSelf(UserUpdateInfoVo userUpdateInfoVo, HttpServletRequest request);
 }

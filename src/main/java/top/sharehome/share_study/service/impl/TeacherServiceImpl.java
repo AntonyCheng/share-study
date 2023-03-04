@@ -28,6 +28,7 @@ import top.sharehome.share_study.model.entity.Comment;
 import top.sharehome.share_study.model.entity.Resource;
 import top.sharehome.share_study.model.entity.Teacher;
 import top.sharehome.share_study.model.vo.*;
+import top.sharehome.share_study.service.FileOssService;
 import top.sharehome.share_study.service.TeacherService;
 
 import javax.servlet.http.HttpServletRequest;
@@ -55,6 +56,9 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     private ResourceMapper resourceMapper;
     @javax.annotation.Resource
     private CommentMapper commentMapper;
+
+    @javax.annotation.Resource
+    private FileOssService fileOssService;
 
     /**
      * 注册加盐
@@ -232,12 +236,6 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_DOES_NOT_EXIST), "用户后台无数据");
         }
 
-        // 对比密码是否一致
-        String passwordNeedCompare = DigestUtil.md5Hex(adminUpdateSelfVo.getPassword() + SALT);
-        if (!passwordNeedCompare.equals(teacher.getPassword())) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.PASSWORD_VERIFICATION_FAILED), "密码校验失败");
-        }
-
         // 判断更新内容是否重复
         if (Objects.equals(adminUpdateSelfVo.getAccount(), teacher.getAccount())
                 && Objects.equals(adminUpdateSelfVo.getGender(), teacher.getGender())
@@ -246,6 +244,22 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
                 && adminUpdateSelfVo.getName().equals(teacher.getName())
                 && adminUpdateSelfVo.getEmail().equals(teacher.getEmail())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.THE_UPDATE_DATA_IS_THE_SAME_AS_THE_BACKGROUND_DATA), "更新数据和库中数据相同");
+        }
+
+        // 判断账号是否重复
+        if (!Objects.equals(adminUpdateSelfVo.getAccount(), teacher.getAccount())) {
+            LambdaQueryWrapper<Teacher> teacherLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            teacherLambdaQueryWrapper.eq(Teacher::getAccount, adminUpdateSelfVo.getAccount());
+            Teacher exist = teacherMapper.selectOne(teacherLambdaQueryWrapper);
+            if (exist != null) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.USERNAME_ALREADY_EXISTS));
+            }
+        }
+
+        // 对比密码是否一致
+        String passwordNeedCompare = DigestUtil.md5Hex(adminUpdateSelfVo.getPassword() + SALT);
+        if (!passwordNeedCompare.equals(teacher.getPassword())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PASSWORD_VERIFICATION_FAILED), "密码校验失败");
         }
 
         // 补全数据
@@ -434,6 +448,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
 
         LambdaQueryWrapper<Resource> resourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
         resourceLambdaQueryWrapper.eq(Resource::getBelong, id);
+        List<Resource> resourceList = resourceMapper.selectList(resourceLambdaQueryWrapper);
         resourceMapper.delete(resourceLambdaQueryWrapper);
 
         LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -445,12 +460,16 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         if (deleteResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "教师数据删除失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
+
+        resourceList.forEach(resource -> {
+            fileOssService.delete(resource.getUrl());
+        });
     }
 
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void deleteBatch(List<Long> ids) {
-        ids.forEach(id -> {
+        List<List<Resource>> resourceLists = ids.stream().map(id -> {
             Teacher selectResult = this.getById(id);
             if (selectResult == null) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "教师不存在，不需要进行下一步操作");
@@ -463,22 +482,29 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             teacherLambdaUpdateWrapper.eq(Teacher::getId, id);
             selectResult.setAccount(selectResult.getAccount() + "+" + System.currentTimeMillis());
             teacherMapper.update(selectResult, teacherLambdaUpdateWrapper);
-        });
 
-        ids.forEach(id -> {
             LambdaQueryWrapper<Resource> resourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
             resourceLambdaQueryWrapper.eq(Resource::getBelong, id);
+            List<Resource> resourceList = resourceMapper.selectList(resourceLambdaQueryWrapper);
             resourceMapper.delete(resourceLambdaQueryWrapper);
 
             LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
             commentLambdaQueryWrapper.eq(Comment::getBelong, id);
             commentMapper.delete(commentLambdaQueryWrapper);
-        });
+
+            return resourceList;
+        }).collect(Collectors.toList());
 
         int deleteResult = teacherMapper.deleteBatchIds(ids);
         if (deleteResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "教师数据删除失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
+
+        resourceLists.forEach(resourceList -> {
+            resourceList.forEach(resource -> {
+                fileOssService.delete(resource.getUrl());
+            });
+        });
     }
 
     @Override
@@ -690,6 +716,93 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         request.getSession().setAttribute(CommonConstant.USER_LOGIN_STATE, userLoginDto);
 
         return userLoginDto;
+    }
+
+    @Override
+    public UserGetInfoDto getUserSelf(Long id, HttpServletRequest request) {
+        // 鉴定操作者的权限
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (!Objects.equals(teacherLoginDto.getId(), id)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "任何管理员都无法在个人信息页面获取其他管理员的信息");
+        }
+
+        // 判断被操作数据是否为空
+        Teacher teacher = teacherMapper.selectById(id);
+        if (teacher == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_DOES_NOT_EXIST), "用户后台无数据");
+        }
+
+        // 信息脱敏
+        UserGetInfoDto userGetInfoDto = new UserGetInfoDto();
+        userGetInfoDto.setId(teacher.getId());
+        userGetInfoDto.setAccount(teacher.getAccount());
+        userGetInfoDto.setPassword("");
+        userGetInfoDto.setName(teacher.getName());
+        userGetInfoDto.setAvatar(teacher.getAvatar());
+        userGetInfoDto.setGender(teacher.getGender());
+        userGetInfoDto.setBelong(teacher.getBelong());
+        userGetInfoDto.setEmail(teacher.getEmail());
+
+        return userGetInfoDto;
+    }
+
+    @Override
+    public void updateUserSelf(UserUpdateInfoVo userUpdateInfoVo, HttpServletRequest request) {
+        // 鉴定操作者的权限
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
+        if (Objects.isNull(teacherLoginDto)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "用户未登录");
+        }
+        if (!Objects.equals(teacherLoginDto.getId(), userUpdateInfoVo.getId())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "普通用户都无法在个人信息页面修改其他普通用户的信息");
+        }
+
+        // 判断被操作数据是否为空
+        Teacher teacher = teacherMapper.selectById(userUpdateInfoVo.getId());
+        if (teacher == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_DOES_NOT_EXIST), "用户后台无数据");
+        }
+
+        // 判断更新内容是否重复
+        if (Objects.equals(userUpdateInfoVo.getAccount(), teacher.getAccount())
+                && Objects.equals(userUpdateInfoVo.getGender(), teacher.getGender())
+                && Objects.equals(userUpdateInfoVo.getBelong(), teacher.getBelong())
+                && userUpdateInfoVo.getAvatar().equals(teacher.getAvatar())
+                && userUpdateInfoVo.getName().equals(teacher.getName())
+                && userUpdateInfoVo.getEmail().equals(teacher.getEmail())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.THE_UPDATE_DATA_IS_THE_SAME_AS_THE_BACKGROUND_DATA), "更新数据和库中数据相同");
+        }
+
+        // 判断账号是否重复
+        if (!Objects.equals(userUpdateInfoVo.getAccount(), teacher.getAccount())) {
+            LambdaQueryWrapper<Teacher> teacherLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            teacherLambdaQueryWrapper.eq(Teacher::getAccount, userUpdateInfoVo.getAccount());
+            Teacher exist = teacherMapper.selectOne(teacherLambdaQueryWrapper);
+            if (exist != null) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.USERNAME_ALREADY_EXISTS));
+            }
+        }
+
+        // 对比密码是否一致
+        String passwordNeedCompare = DigestUtil.md5Hex(userUpdateInfoVo.getPassword() + SALT);
+        if (!passwordNeedCompare.equals(teacher.getPassword())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PASSWORD_VERIFICATION_FAILED), "密码校验失败");
+        }
+
+        // 补全数据
+        teacher.setAccount(userUpdateInfoVo.getAccount());
+        teacher.setName(userUpdateInfoVo.getName());
+        teacher.setAvatar(userUpdateInfoVo.getAvatar());
+        teacher.setGender(userUpdateInfoVo.getGender());
+        teacher.setBelong(userUpdateInfoVo.getBelong());
+        teacher.setEmail(userUpdateInfoVo.getEmail());
+
+        int updateResult = teacherMapper.updateById(teacher);
+
+        // 判断数据库插入结果
+        if (updateResult == 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "修改用户失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+        }
     }
 
     @Override
