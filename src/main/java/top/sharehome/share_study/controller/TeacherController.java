@@ -188,7 +188,7 @@ public class TeacherController {
      * @return 返回最新的登录状态
      */
     @GetMapping("/getAdminLogin/{id}")
-    @ApiOperation("用户获取登录状态")
+    @ApiOperation("管理员获取登录状态")
     public R<TeacherLoginDto> getAdminLogin(@PathVariable("id") Long id, HttpServletRequest request) {
         if (id == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "操作者id为空，操作失败");
