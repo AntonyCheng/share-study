@@ -11,7 +11,7 @@
  Target Server Version : 80028
  File Encoding         : 65001
 
- Date: 01/03/2023 21:26:26
+ Date: 04/03/2023 19:45:48
 */
 
 SET NAMES utf8mb4;
@@ -63,7 +63,7 @@ CREATE TABLE `t_comment`  (
 -- ----------------------------
 -- Records of t_comment
 -- ----------------------------
-INSERT INTO `t_comment` VALUES (1, 2, 1628303246513643522, 1628303016208605185, '这是user发给admin的消息', NULL, 0, 0, '2023-02-28 22:30:17', '2023-02-28 22:30:17', 0);
+INSERT INTO `t_comment` VALUES (1, 2, 1628303246513643522, 1628303016208605185, '这是user发给admin的消息', NULL, 0, 0, '2023-02-28 22:30:17', '2023-02-28 22:30:17', 1);
 INSERT INTO `t_comment` VALUES (2, 3, 1628303016208605185, 1628303184442138626, '这是admin发给super的消息', NULL, 0, 0, '2023-02-28 22:31:03', '2023-02-28 22:31:03', 0);
 INSERT INTO `t_comment` VALUES (3, 1, 1628303184442138626, 1628303246513643522, '这是super发给user的消息', NULL, 0, 0, '2023-02-28 22:31:32', '2023-02-28 22:31:32', 0);
 
@@ -77,6 +77,7 @@ CREATE TABLE `t_resource`  (
   `resource_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '教学资料名',
   `resource_info` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '教学资料简介',
   `resource_url` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '教学资料所在地址',
+  `resource_score` bigint NOT NULL DEFAULT 0 COMMENT '教学资料收藏数',
   `resource_status` tinyint NOT NULL DEFAULT 0 COMMENT '教学资料状态（0表示正常，1表示封禁）\n',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '教学资料发布时间',
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '教学资料修改时间',
@@ -88,9 +89,9 @@ CREATE TABLE `t_resource`  (
 -- ----------------------------
 -- Records of t_resource
 -- ----------------------------
-INSERT INTO `t_resource` VALUES (1, 1628303016208605185, '测试admin', '测试admin', 'test@admin.com', 0, '2023-02-28 08:02:14', '2023-03-01 10:16:37', 0);
-INSERT INTO `t_resource` VALUES (2, 1628303246513643522, '测试user', '测试user', 'test@user.com', 0, '2023-02-28 21:46:05', '2023-03-01 10:16:37', 0);
-INSERT INTO `t_resource` VALUES (3, 1628303184442138626, '测试super', '测试super', 'test@super.com', 0, '2023-02-28 21:46:52', '2023-02-28 21:46:52', 0);
+INSERT INTO `t_resource` VALUES (1, 1628303016208605185, '测试admin', '测试admin', 'test@admin.com', 0, 0, '2023-02-28 08:02:14', '2023-03-01 10:16:37', 0);
+INSERT INTO `t_resource` VALUES (2, 1628303246513643522, '测试user', '测试user', 'test@user.com', 0, 0, '2023-02-28 21:46:05', '2023-03-03 21:34:22', 0);
+INSERT INTO `t_resource` VALUES (3, 1628303184442138626, '测试super', '测试super', 'test@super.com', 0, 0, '2023-02-28 21:46:52', '2023-03-03 21:35:00', 0);
 
 -- ----------------------------
 -- Table structure for t_teacher
@@ -120,9 +121,9 @@ CREATE TABLE `t_teacher`  (
 -- ----------------------------
 -- Records of t_teacher
 -- ----------------------------
-INSERT INTO `t_teacher` VALUES (1628303016208605185, 'admin', '605c8beea36f63abeec7b55e06ebaecf', '管理员', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/super_avatar.jpg', 0, 1627965942293053441, 'admin@admin.com', 0, 0, 0, 0, 1, '2023-02-22 15:57:46', '2023-02-28 09:31:38', 0);
-INSERT INTO `t_teacher` VALUES (1628303184442138626, 'super', '393b05d1a9652eef4b882773c81eae60', '超级管理员', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/super_avatar.jpg', 0, 1628076603207450626, 'super@super.com', 0, 0, 0, 0, 2, '2023-02-22 15:58:26', '2023-03-01 18:12:50', 0);
-INSERT INTO `t_teacher` VALUES (1628303246513643522, 'user', '4af7ffbd5015c334748d00060b9ce132', '用户', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/super_avatar.jpg', 0, 1627965942293053441, 'user@user.com', 0, 0, 0, 0, 0, '2023-02-22 15:58:41', '2023-02-26 16:06:49', 0);
-INSERT INTO `t_teacher` VALUES (1630917423728640002, 'test', '7137fcb1c6a440365676694dce1bbafe', '测试注册', 'http://dummyimage.com/100x100', 0, 1628446055090606081, 'test@test.com', 0, 0, 0, 0, 0, '2023-03-01 21:06:29', '2023-03-01 21:06:29', 0);
+INSERT INTO `t_teacher` VALUES (1628303016208605185, 'admin', '605c8beea36f63abeec7b55e06ebaecf', '管理员', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/super_avatar.jpg', 0, 1627965942293053441, 'admin@admin.com', 1, 0, 0, 0, 1, '2023-02-22 15:57:46', '2023-03-03 21:36:45', 0);
+INSERT INTO `t_teacher` VALUES (1628303184442138626, 'super', '393b05d1a9652eef4b882773c81eae60', '超级管理员', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/super_avatar.jpg', 0, 1628076603207450626, 'super@super.com', 1, 0, 0, 0, 2, '2023-02-22 15:58:26', '2023-03-03 21:36:45', 0);
+INSERT INTO `t_teacher` VALUES (1628303246513643522, 'user', '4af7ffbd5015c334748d00060b9ce132', '用户', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/super_avatar.jpg', 0, 1627965942293053441, 'user@user.com', 1, 0, 0, 0, 0, '2023-02-22 15:58:41', '2023-03-03 21:36:45', 0);
+INSERT INTO `t_teacher` VALUES (1630917423728640002, 'test', '7137fcb1c6a440365676694dce1bbafe', '测试注册', 'http://dummyimage.com/100x100', 0, 1628446055090606081, 'test@test.com', 0, 0, 0, 0, 0, '2023-03-01 21:06:29', '2023-03-01 23:05:21', 0);
 
 SET FOREIGN_KEY_CHECKS = 1;
