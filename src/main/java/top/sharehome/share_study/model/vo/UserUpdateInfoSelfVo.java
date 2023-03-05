@@ -16,7 +16,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @ApiModel("普通用户修改自己信息Vo实体")
-public class UserUpdateInfoVo implements Serializable {
+public class UserUpdateInfoSelfVo implements Serializable {
     private static final long serialVersionUID = 709932314737212052L;
     /**
      * 教师用户唯一ID

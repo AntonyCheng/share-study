@@ -79,7 +79,7 @@ public class Comment implements Serializable {
      * 评论是否已读（0表示未读，1表示已读）
      */
     @TableField(value = "comment_read_status", fill = FieldFill.INSERT)
-    @ApiModelProperty(value = "评论是否已读（0表示未读，1表示已读）")
+    @ApiModelProperty(value = "评论是否已读（0表示未读，1表示已读，2表示接收者已删除）")
     @ExcelProperty(value = "评论是否已读", index = 6)
     private Integer readStatus;
 

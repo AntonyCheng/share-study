@@ -15,19 +15,14 @@ import top.sharehome.share_study.common.exception_handler.customize.CustomizeRet
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeTransactionException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
-import top.sharehome.share_study.mapper.CollegeMapper;
-import top.sharehome.share_study.mapper.CommentMapper;
-import top.sharehome.share_study.mapper.ResourceMapper;
-import top.sharehome.share_study.mapper.TeacherMapper;
+import top.sharehome.share_study.mapper.*;
 import top.sharehome.share_study.model.dto.*;
-import top.sharehome.share_study.model.entity.College;
-import top.sharehome.share_study.model.entity.Comment;
-import top.sharehome.share_study.model.entity.Resource;
-import top.sharehome.share_study.model.entity.Teacher;
+import top.sharehome.share_study.model.entity.*;
 import top.sharehome.share_study.model.vo.ResourcePageVo;
 import top.sharehome.share_study.model.vo.ResourceUpdateVo;
 import top.sharehome.share_study.model.vo.UserResourcePageVo;
 import top.sharehome.share_study.model.vo.UserResourceUpdateVo;
+import top.sharehome.share_study.service.CollectService;
 import top.sharehome.share_study.service.FileOssService;
 import top.sharehome.share_study.service.ResourceService;
 
@@ -62,6 +57,9 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
 
     @javax.annotation.Resource
     private FileOssService fileOssService;
+
+    @javax.annotation.Resource
+    private CollectMapper collectMapper;
 
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
@@ -116,6 +114,10 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         commentLambdaQueryWrapper.eq(Comment::getResource, id);
         commentMapper.delete(commentLambdaQueryWrapper);
 
+        LambdaQueryWrapper<Collect> collectLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        collectLambdaQueryWrapper.eq(Collect::getResource, id);
+        collectMapper.delete(collectLambdaQueryWrapper);
+
         int deleteResult = resourceMapper.delete(resourceLambdaQueryWrapper);
 
         if (deleteResult == 0) {
@@ -157,6 +159,10 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
             commentLambdaQueryWrapper.eq(Comment::getResource, id);
             commentMapper.delete(commentLambdaQueryWrapper);
+
+            LambdaQueryWrapper<Collect> collectLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            collectLambdaQueryWrapper.eq(Collect::getResource, id);
+            collectMapper.delete(collectLambdaQueryWrapper);
         });
 
         int deleteResult = resourceMapper.deleteBatchIds(ids);
@@ -353,6 +359,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
                     userResourcePageDto.setResourceScore(resource.getScore());
                     userResourcePageDto.setResourceUrl(resource.getUrl());
                 }
+                userResourcePageDto.setCreateTime(resource.getCreateTime());
                 LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
                 commentLambdaQueryWrapper.eq(Comment::getResource, resource.getId());
                 Integer commentCount = Math.toIntExact(commentMapper.selectCount(commentLambdaQueryWrapper));

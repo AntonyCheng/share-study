@@ -2,6 +2,7 @@ package top.sharehome.share_study.service.impl;
 
 import com.alibaba.excel.EasyExcelFactory;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.commons.lang3.ObjectUtils;
@@ -21,6 +22,7 @@ import top.sharehome.share_study.mapper.TeacherMapper;
 import top.sharehome.share_study.model.dto.CommentGetDto;
 import top.sharehome.share_study.model.dto.CommentPageDto;
 import top.sharehome.share_study.model.dto.TeacherLoginDto;
+import top.sharehome.share_study.model.dto.UserCommentPageDto;
 import top.sharehome.share_study.model.entity.Comment;
 import top.sharehome.share_study.model.entity.Resource;
 import top.sharehome.share_study.model.entity.Teacher;
@@ -33,6 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -242,12 +245,12 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         if (commentPageVo == null) {
             this.page(page);
             BeanUtils.copyProperties(page, returnResult, "records");
-            List<CommentPageDto> pageDtoList = page.getRecords().stream().map(record -> {
+            List<CommentPageDto> pageDtoList = page.getRecords().stream().map(comment -> {
                 CommentPageDto commentPageDto = new CommentPageDto();
-                BeanUtils.copyProperties(record, commentPageDto);
+                BeanUtils.copyProperties(comment, commentPageDto);
 
                 LambdaQueryWrapper<Teacher> belongLambdaQueryWrapper = new LambdaQueryWrapper<>();
-                belongLambdaQueryWrapper.eq(Teacher::getId, record.getBelong());
+                belongLambdaQueryWrapper.eq(Teacher::getId, comment.getBelong());
                 Teacher belong = teacherMapper.selectOne(belongLambdaQueryWrapper);
                 if (belong == null) {
                     throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "发送者不存在");
@@ -255,7 +258,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 commentPageDto.setBelongName(belong.getName());
 
                 LambdaQueryWrapper<Teacher> sendLambdaQueryWrapper = new LambdaQueryWrapper<>();
-                sendLambdaQueryWrapper.eq(Teacher::getId, record.getSend());
+                sendLambdaQueryWrapper.eq(Teacher::getId, comment.getSend());
                 Teacher send = teacherMapper.selectOne(sendLambdaQueryWrapper);
                 if (send == null) {
                     throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "接收者不存在");
@@ -263,7 +266,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 commentPageDto.setSendName(send.getName());
 
                 LambdaQueryWrapper<Resource> resourceQueryWrapper = new LambdaQueryWrapper<>();
-                resourceQueryWrapper.eq(Resource::getId, record.getResource());
+                resourceQueryWrapper.eq(Resource::getId, comment.getResource());
                 Resource resource = resourceMapper.selectOne(resourceQueryWrapper);
                 if (resource == null) {
                     throw new CustomizeReturnException(R.failure(RCodeEnum.RESOURCE_NOT_EXISTS), "教学资料不存在");
@@ -325,22 +328,22 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         List<Long> finalSendIds = sendIds;
         List<Long> finalResourceIds = resourceIds;
 
-        List<CommentPageDto> pageDtoList = page.getRecords().stream().map(record -> {
-            if (finalBelongIds != null && !finalBelongIds.isEmpty() && !finalBelongIds.contains(record.getBelong())) {
+        List<CommentPageDto> pageDtoList = page.getRecords().stream().map(comment -> {
+            if (finalBelongIds != null && !finalBelongIds.isEmpty() && !finalBelongIds.contains(comment.getBelong())) {
                 return null;
             }
-            if (finalSendIds != null && !finalSendIds.isEmpty() && !finalSendIds.contains(record.getSend())) {
+            if (finalSendIds != null && !finalSendIds.isEmpty() && !finalSendIds.contains(comment.getSend())) {
                 return null;
             }
-            if (finalResourceIds != null && !finalResourceIds.isEmpty() && !finalResourceIds.contains(record.getResource())) {
+            if (finalResourceIds != null && !finalResourceIds.isEmpty() && !finalResourceIds.contains(comment.getResource())) {
                 return null;
             }
 
             CommentPageDto commentPageDto = new CommentPageDto();
-            BeanUtils.copyProperties(record, commentPageDto);
+            BeanUtils.copyProperties(comment, commentPageDto);
 
             LambdaQueryWrapper<Teacher> belongLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            belongLambdaQueryWrapper.eq(Teacher::getId, record.getBelong());
+            belongLambdaQueryWrapper.eq(Teacher::getId, comment.getBelong());
             Teacher belongTeacher = teacherMapper.selectOne(belongLambdaQueryWrapper);
             if (belongTeacher == null) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS));
@@ -348,7 +351,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
             commentPageDto.setBelongName(belongTeacher.getName());
 
             LambdaQueryWrapper<Teacher> sendLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            sendLambdaQueryWrapper.eq(Teacher::getId, record.getSend());
+            sendLambdaQueryWrapper.eq(Teacher::getId, comment.getSend());
             Teacher sendTeacher = teacherMapper.selectOne(sendLambdaQueryWrapper);
             if (sendTeacher == null) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS));
@@ -356,7 +359,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
             commentPageDto.setSendName(sendTeacher.getName());
 
             LambdaQueryWrapper<Resource> resourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            resourceLambdaQueryWrapper.eq(Resource::getId, record.getResource());
+            resourceLambdaQueryWrapper.eq(Resource::getId, comment.getResource());
             Resource resource = resourceMapper.selectOne(resourceLambdaQueryWrapper);
             if (resource == null) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS));
@@ -369,5 +372,98 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         returnResult.setTotal(pageDtoList.size());
         returnResult.setRecords(pageDtoList);
         return returnResult;
+    }
+
+    @Override
+    public Page<UserCommentPageDto> getUserCommentPage(HttpServletRequest request, Integer current, Integer pageSize) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
+        }
+        Page<Comment> page = new Page<>(current, pageSize);
+        Page<UserCommentPageDto> returnResult = new Page<>(current, pageSize);
+        LambdaQueryWrapper<Comment> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper
+                .eq(Comment::getSend, teacherLoginDto.getId())
+                .ne(Comment::getReadStatus, 2)
+                .orderByAsc(Comment::getCreateTime);
+
+        this.page(page, lambdaQueryWrapper);
+        BeanUtils.copyProperties(page, returnResult, "records");
+        List<UserCommentPageDto> pageDtoList = page.getRecords().stream().map(comment -> {
+            Teacher teacher = teacherMapper.selectById(comment.getBelong());
+            if (teacher == null) {
+                return null;
+            }
+
+            UserCommentPageDto userCommentPageDto = new UserCommentPageDto();
+            userCommentPageDto.setId(comment.getId());
+            userCommentPageDto.setCreateTime(LocalDateTime.now());
+            userCommentPageDto.setBelongName(teacher.getName());
+            userCommentPageDto.setResourceName(resourceMapper.selectById(comment.getResource()).getName());
+            userCommentPageDto.setReadStatus(comment.getReadStatus());
+            userCommentPageDto.setStatus(comment.getStatus());
+            if (comment.getStatus() == 0) {
+                userCommentPageDto.setContent(comment.getContent());
+            } else {
+                userCommentPageDto.setContent("该内容已经被封禁");
+            }
+            return userCommentPageDto;
+        }).collect(Collectors.toList());
+        pageDtoList.removeIf(Objects::isNull);
+        returnResult.setTotal(pageDtoList.size());
+        returnResult.setRecords(pageDtoList);
+        return returnResult;
+    }
+
+    @Override
+    public void deleteUserComment(Long id, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
+        }
+        Comment resultFromDatabase = commentMapper.selectById(id);
+        if (!Objects.equals(teacherLoginDto.getId(), resultFromDatabase.getSend())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "普通用户不能删除其他用户收到的信息");
+        }
+
+        if (Objects.equals(resultFromDatabase.getReadStatus(), 2)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "该消息记录已经被删");
+        }
+
+        LambdaUpdateWrapper<Comment> commentLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        commentLambdaUpdateWrapper
+                .eq(Comment::getId, id)
+                .set(Comment::getStatus, 2);
+        int updateResult = commentMapper.update(null, commentLambdaUpdateWrapper);
+
+        // 判断数据库插入结果
+        if (updateResult == 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "删除交流评论失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+        }
+    }
+
+    @Override
+    public void deleteUserCommentBatch(HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
+        }
+
+        LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        commentLambdaQueryWrapper.eq(Comment::getSend, teacherLoginDto.getId());
+        List<Comment> comments = commentMapper.selectList(commentLambdaQueryWrapper);
+
+        if (comments.isEmpty()) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "该用户没有任何消息");
+        }
+
+        List<Long> commentIdList = comments.stream().map(Comment::getId).collect(Collectors.toList());
+        int updateResult = commentMapper.deleteBatchIds(commentIdList);
+
+        // 判断数据库插入结果
+        if (updateResult == 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "删除交流评论失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+        }
     }
 }

@@ -29,11 +29,6 @@ public class UserGetInfoDto implements Serializable {
     private String account;
 
     /**
-     * 教师账号密码（推荐6-16位）
-     */
-    private String password;
-
-    /**
      * 教师姓名
      */
     private String name;

@@ -18,15 +18,9 @@ import top.sharehome.share_study.common.exception_handler.customize.CustomizeRet
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeTransactionException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
-import top.sharehome.share_study.mapper.CollegeMapper;
-import top.sharehome.share_study.mapper.CommentMapper;
-import top.sharehome.share_study.mapper.ResourceMapper;
-import top.sharehome.share_study.mapper.TeacherMapper;
+import top.sharehome.share_study.mapper.*;
 import top.sharehome.share_study.model.dto.*;
-import top.sharehome.share_study.model.entity.College;
-import top.sharehome.share_study.model.entity.Comment;
-import top.sharehome.share_study.model.entity.Resource;
-import top.sharehome.share_study.model.entity.Teacher;
+import top.sharehome.share_study.model.entity.*;
 import top.sharehome.share_study.model.vo.*;
 import top.sharehome.share_study.service.FileOssService;
 import top.sharehome.share_study.service.TeacherService;
@@ -56,9 +50,10 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     private ResourceMapper resourceMapper;
     @javax.annotation.Resource
     private CommentMapper commentMapper;
-
     @javax.annotation.Resource
     private FileOssService fileOssService;
+    @javax.annotation.Resource
+    private CollectMapper collectMapper;
 
     /**
      * 注册加盐
@@ -137,6 +132,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         teacherLoginDto.setScore(teacher.getScore());
         teacherLoginDto.setMessageNumber(teacher.getMessageTotal() - teacher.getMessageRead());
         teacherLoginDto.setRole(teacher.getRole());
+        teacherLoginDto.setCreateTime(teacher.getCreateTime());
         request.getSession().setAttribute(CommonConstant.USER_LOGIN_STATE, teacherLoginDto);
         return teacherLoginDto;
     }
@@ -186,6 +182,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         teacherLoginDto.setScore(teacher.getScore());
         teacherLoginDto.setMessageNumber(teacher.getMessageTotal() - teacher.getMessageRead());
         teacherLoginDto.setRole(teacher.getRole());
+        teacherLoginDto.setCreateTime(teacher.getCreateTime());
 
         // 向Session中存入登录状态
         request.getSession().setAttribute(CommonConstant.ADMIN_LOGIN_STATE, teacherLoginDto);
@@ -463,6 +460,9 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
 
         resourceList.forEach(resource -> {
             fileOssService.delete(resource.getUrl());
+            LambdaQueryWrapper<Collect> collectLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            collectLambdaQueryWrapper.eq(Collect::getResource, resource.getId());
+            collectMapper.delete(collectLambdaQueryWrapper);
         });
     }
 
@@ -503,6 +503,9 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         resourceLists.forEach(resourceList -> {
             resourceList.forEach(resource -> {
                 fileOssService.delete(resource.getUrl());
+                LambdaQueryWrapper<Collect> collectLambdaQueryWrapper = new LambdaQueryWrapper<>();
+                collectLambdaQueryWrapper.eq(Collect::getResource, resource.getId());
+                collectMapper.delete(collectLambdaQueryWrapper);
             });
         });
     }
@@ -680,6 +683,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         adminLoginDto.setScore(teacher.getScore());
         adminLoginDto.setMessageNumber(teacher.getMessageTotal() - teacher.getMessageRead());
         adminLoginDto.setRole(teacher.getRole());
+        adminLoginDto.setCreateTime(teacher.getCreateTime());
 
         // 向Session中更新登录状态
         request.getSession().setAttribute(CommonConstant.ADMIN_LOGIN_STATE, adminLoginDto);
@@ -711,6 +715,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         userLoginDto.setScore(teacher.getScore());
         userLoginDto.setMessageNumber(teacher.getMessageTotal() - teacher.getMessageRead());
         userLoginDto.setRole(teacher.getRole());
+        userLoginDto.setCreateTime(teacher.getCreateTime());
 
         // 向Session中更新登录状态
         request.getSession().setAttribute(CommonConstant.USER_LOGIN_STATE, userLoginDto);
@@ -719,13 +724,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
-    public UserGetInfoDto getUserSelf(Long id, HttpServletRequest request) {
-        // 鉴定操作者的权限
-        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
-        if (!Objects.equals(teacherLoginDto.getId(), id)) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "任何管理员都无法在个人信息页面获取其他管理员的信息");
-        }
-
+    public UserGetInfoDto getUserInfo(Long id, HttpServletRequest request) {
         // 判断被操作数据是否为空
         Teacher teacher = teacherMapper.selectById(id);
         if (teacher == null) {
@@ -736,7 +735,6 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         UserGetInfoDto userGetInfoDto = new UserGetInfoDto();
         userGetInfoDto.setId(teacher.getId());
         userGetInfoDto.setAccount(teacher.getAccount());
-        userGetInfoDto.setPassword("");
         userGetInfoDto.setName(teacher.getName());
         userGetInfoDto.setAvatar(teacher.getAvatar());
         userGetInfoDto.setGender(teacher.getGender());
@@ -747,36 +745,36 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
-    public void updateUserSelf(UserUpdateInfoVo userUpdateInfoVo, HttpServletRequest request) {
+    public void updateUserSelf(UserUpdateInfoSelfVo userUpdateInfoSelfVo, HttpServletRequest request) {
         // 鉴定操作者的权限
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
         if (Objects.isNull(teacherLoginDto)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "用户未登录");
         }
-        if (!Objects.equals(teacherLoginDto.getId(), userUpdateInfoVo.getId())) {
+        if (!Objects.equals(teacherLoginDto.getId(), userUpdateInfoSelfVo.getId())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "普通用户都无法在个人信息页面修改其他普通用户的信息");
         }
 
         // 判断被操作数据是否为空
-        Teacher teacher = teacherMapper.selectById(userUpdateInfoVo.getId());
+        Teacher teacher = teacherMapper.selectById(userUpdateInfoSelfVo.getId());
         if (teacher == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_DOES_NOT_EXIST), "用户后台无数据");
         }
 
         // 判断更新内容是否重复
-        if (Objects.equals(userUpdateInfoVo.getAccount(), teacher.getAccount())
-                && Objects.equals(userUpdateInfoVo.getGender(), teacher.getGender())
-                && Objects.equals(userUpdateInfoVo.getBelong(), teacher.getBelong())
-                && userUpdateInfoVo.getAvatar().equals(teacher.getAvatar())
-                && userUpdateInfoVo.getName().equals(teacher.getName())
-                && userUpdateInfoVo.getEmail().equals(teacher.getEmail())) {
+        if (Objects.equals(userUpdateInfoSelfVo.getAccount(), teacher.getAccount())
+                && Objects.equals(userUpdateInfoSelfVo.getGender(), teacher.getGender())
+                && Objects.equals(userUpdateInfoSelfVo.getBelong(), teacher.getBelong())
+                && userUpdateInfoSelfVo.getAvatar().equals(teacher.getAvatar())
+                && userUpdateInfoSelfVo.getName().equals(teacher.getName())
+                && userUpdateInfoSelfVo.getEmail().equals(teacher.getEmail())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.THE_UPDATE_DATA_IS_THE_SAME_AS_THE_BACKGROUND_DATA), "更新数据和库中数据相同");
         }
 
         // 判断账号是否重复
-        if (!Objects.equals(userUpdateInfoVo.getAccount(), teacher.getAccount())) {
+        if (!Objects.equals(userUpdateInfoSelfVo.getAccount(), teacher.getAccount())) {
             LambdaQueryWrapper<Teacher> teacherLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            teacherLambdaQueryWrapper.eq(Teacher::getAccount, userUpdateInfoVo.getAccount());
+            teacherLambdaQueryWrapper.eq(Teacher::getAccount, userUpdateInfoSelfVo.getAccount());
             Teacher exist = teacherMapper.selectOne(teacherLambdaQueryWrapper);
             if (exist != null) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.USERNAME_ALREADY_EXISTS));
@@ -784,18 +782,18 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         }
 
         // 对比密码是否一致
-        String passwordNeedCompare = DigestUtil.md5Hex(userUpdateInfoVo.getPassword() + SALT);
+        String passwordNeedCompare = DigestUtil.md5Hex(userUpdateInfoSelfVo.getPassword() + SALT);
         if (!passwordNeedCompare.equals(teacher.getPassword())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.PASSWORD_VERIFICATION_FAILED), "密码校验失败");
         }
 
         // 补全数据
-        teacher.setAccount(userUpdateInfoVo.getAccount());
-        teacher.setName(userUpdateInfoVo.getName());
-        teacher.setAvatar(userUpdateInfoVo.getAvatar());
-        teacher.setGender(userUpdateInfoVo.getGender());
-        teacher.setBelong(userUpdateInfoVo.getBelong());
-        teacher.setEmail(userUpdateInfoVo.getEmail());
+        teacher.setAccount(userUpdateInfoSelfVo.getAccount());
+        teacher.setName(userUpdateInfoSelfVo.getName());
+        teacher.setAvatar(userUpdateInfoSelfVo.getAvatar());
+        teacher.setGender(userUpdateInfoSelfVo.getGender());
+        teacher.setBelong(userUpdateInfoSelfVo.getBelong());
+        teacher.setEmail(userUpdateInfoSelfVo.getEmail());
 
         int updateResult = teacherMapper.updateById(teacher);
 

@@ -9,17 +9,18 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 用户资料分页Dto对象
+ * 用户收藏分页Dto对象
  *
  * @author AntonyCheng
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ApiModel(description = "用户资料分页Dto对象")
-public class UserResourcePageDto implements Serializable {
+@ApiModel(description = "用户收藏分页Dto对象")
+public class UserCollectPageDto implements Serializable {
 
-    private static final long serialVersionUID = 5634714314773923119L;
+    private static final long serialVersionUID = 179284972341642845L;
+
     /**
      * 用户唯一ID
      */
@@ -61,22 +62,17 @@ public class UserResourcePageDto implements Serializable {
     private String resourceUrl;
 
     /**
-     * 教学资料收藏数
-     */
-    private Integer resourceScore;
-
-    /**
      * 教学资料状态
      */
     private Integer resourceStatus;
 
     /**
-     * 教学资料评论数
+     * 收藏ID
      */
-    private Integer commentCount;
+    private Long collectId;
 
     /**
-     * 教学资料发布时间
+     * 收藏时间
      */
     private LocalDateTime createTime;
 }

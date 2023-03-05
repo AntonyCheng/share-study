@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import top.sharehome.share_study.model.dto.CommentGetDto;
 import top.sharehome.share_study.model.dto.CommentPageDto;
+import top.sharehome.share_study.model.dto.UserCommentPageDto;
 import top.sharehome.share_study.model.entity.Comment;
 import top.sharehome.share_study.model.vo.CommentPageVo;
 import top.sharehome.share_study.model.vo.CommentUpdateVo;
@@ -68,4 +69,29 @@ public interface CommentService extends IService<Comment> {
      * @return 返回分页结果
      */
     Page<CommentPageDto> pageComment(Integer current, Integer pageSize, CommentPageVo commentPageVo);
+
+    /**
+     * 交流评论分页查询接口（s/a）
+     *
+     * @param request  获取Session中的登录状态
+     * @param current  当前页
+     * @param pageSize 页面条数
+     * @return 返回分页结果
+     */
+    Page<UserCommentPageDto> getUserCommentPage(HttpServletRequest request, Integer current, Integer pageSize);
+
+    /**
+     * 普通用户删除单条评论
+     *
+     * @param id      评论交流的ID
+     * @param request 获取操作者的登录状态
+     */
+    void deleteUserComment(Long id, HttpServletRequest request);
+
+    /**
+     * 普通用户清空收到的评论
+     *
+     * @param request 获取操作者的登录状态
+     */
+    void deleteUserCommentBatch(HttpServletRequest request);
 }

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 /**
  * 教师用户Session对象
@@ -68,4 +69,9 @@ public class TeacherLoginDto implements Serializable {
      * 用户角色（0普通用户，1管理员用户，2超级管理员）
      */
     private Integer role;
+
+    /**
+     * 用户加入时间
+     */
+    private LocalDateTime createTime;
 }
