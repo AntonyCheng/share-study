@@ -345,7 +345,7 @@ public class UserController {
      * @param request 获取操作者的登录状态
      * @return 返回分页结果
      */
-    @DeleteMapping("/resource/delete/{id}")
+    @DeleteMapping("/collect/delete/{id}")
     @ApiOperation("普通用户删除收藏")
     public R<String> deleteCollect(@PathVariable("id") Long id, HttpServletRequest request) {
         if (id == null) {

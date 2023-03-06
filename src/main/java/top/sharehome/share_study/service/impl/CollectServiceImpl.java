@@ -89,6 +89,7 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
                     userCollectPageDto.setResourceInfo(resource.getInfo());
                     userCollectPageDto.setResourceUrl(resource.getUrl());
                 }
+                userCollectPageDto.setCollectId(collect.getId());
                 userCollectPageDto.setCreateTime(collect.getCreateTime());
 
                 return userCollectPageDto;
@@ -134,6 +135,7 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
                 userCollectPageDto.setResourceUrl(resource.getUrl());
             }
             userCollectPageDto.setCollectId(collect.getId());
+            userCollectPageDto.setCreateTime(collect.getCreateTime());
 
             return userCollectPageDto;
         }).collect(Collectors.toList());
