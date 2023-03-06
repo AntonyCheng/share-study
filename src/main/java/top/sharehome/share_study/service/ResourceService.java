@@ -5,12 +5,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import top.sharehome.share_study.model.dto.ResourceGetDto;
 import top.sharehome.share_study.model.dto.ResourcePageDto;
 import top.sharehome.share_study.model.dto.UserResourceGetDto;
-import top.sharehome.share_study.model.dto.UserResourcePageDto;
+import top.sharehome.share_study.model.dto.PostPageDto;
 import top.sharehome.share_study.model.entity.Resource;
-import top.sharehome.share_study.model.vo.ResourcePageVo;
-import top.sharehome.share_study.model.vo.ResourceUpdateVo;
-import top.sharehome.share_study.model.vo.UserResourcePageVo;
-import top.sharehome.share_study.model.vo.UserResourceUpdateVo;
+import top.sharehome.share_study.model.vo.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -83,7 +80,7 @@ public interface ResourceService extends IService<Resource> {
      * @param userResourcePageVo 模糊查询条件类
      * @return 返回分页结果
      */
-    Page<UserResourcePageDto> getUserResourcePage(Long id, Integer current, Integer pageSize, HttpServletRequest request, UserResourcePageVo userResourcePageVo);
+    Page<PostPageDto> getUserResourcePage(Long id, Integer current, Integer pageSize, HttpServletRequest request, UserResourcePageVo userResourcePageVo);
 
     /**
      * 普通用户删除教学资料
@@ -106,7 +103,18 @@ public interface ResourceService extends IService<Resource> {
      * 普通用户修改教学资料信息接口（s/a/u）
      *
      * @param userResourceUpdateVo 普通用户更新教学资料信息Vo实体
-     * @param request          获取Session中的登录状态
+     * @param request              获取Session中的登录状态
      */
     void updateUserResource(UserResourceUpdateVo userResourceUpdateVo, HttpServletRequest request);
+
+    /**
+     * 用户帖子分页
+     *
+     * @param current    当前页
+     * @param pageSize   页面条数
+     * @param request    获取操作者的登录状态
+     * @param postPageVo 帖子分页模糊查询参数
+     * @return 返回分页结果
+     */
+    Page<PostPageDto> getPostPage(Integer current, Integer pageSize, HttpServletRequest request, PostPageVo postPageVo);
 }

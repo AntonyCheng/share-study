@@ -170,7 +170,7 @@ public class UserController {
      */
     @GetMapping("/resource/page/{id}/{current}/{pageSize}")
     @ApiOperation("普通用户的教学资料分页")
-    public R<Page<UserResourcePageDto>> getResourcePage(@PathVariable("id") Long id, @PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, HttpServletRequest request, @RequestBody(required = false) UserResourcePageVo userResourcePageVo) {
+    public R<Page<PostPageDto>> getResourcePage(@PathVariable("id") Long id, @PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, HttpServletRequest request, @RequestBody(required = false) UserResourcePageVo userResourcePageVo) {
         if (id == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "操作者id为空，操作失败");
         }
@@ -185,7 +185,7 @@ public class UserController {
             throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH), "分页参数格式错误");
         }
 
-        Page<UserResourcePageDto> userResourceDtoPage = resourceService.getUserResourcePage(id, current, pageSize, request, userResourcePageVo);
+        Page<PostPageDto> userResourceDtoPage = resourceService.getUserResourcePage(id, current, pageSize, request, userResourcePageVo);
 
         return R.success(userResourceDtoPage, "用户教学资料查询成功");
     }

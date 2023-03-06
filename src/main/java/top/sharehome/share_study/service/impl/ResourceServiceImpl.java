@@ -2,6 +2,7 @@ package top.sharehome.share_study.service.impl;
 
 import com.alibaba.excel.EasyExcelFactory;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.commons.lang3.ObjectUtils;
@@ -18,11 +19,7 @@ import top.sharehome.share_study.common.response.RCodeEnum;
 import top.sharehome.share_study.mapper.*;
 import top.sharehome.share_study.model.dto.*;
 import top.sharehome.share_study.model.entity.*;
-import top.sharehome.share_study.model.vo.ResourcePageVo;
-import top.sharehome.share_study.model.vo.ResourceUpdateVo;
-import top.sharehome.share_study.model.vo.UserResourcePageVo;
-import top.sharehome.share_study.model.vo.UserResourceUpdateVo;
-import top.sharehome.share_study.service.CollectService;
+import top.sharehome.share_study.model.vo.*;
 import top.sharehome.share_study.service.FileOssService;
 import top.sharehome.share_study.service.ResourceService;
 
@@ -316,13 +313,13 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     }
 
     @Override
-    public Page<UserResourcePageDto> getUserResourcePage(Long id, Integer current, Integer pageSize, HttpServletRequest request, UserResourcePageVo userResourcePageVo) {
+    public Page<PostPageDto> getUserResourcePage(Long id, Integer current, Integer pageSize, HttpServletRequest request, UserResourcePageVo userResourcePageVo) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
         if (teacherLoginDto == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
         }
         Page<Resource> page = new Page<>(current, pageSize);
-        Page<UserResourcePageDto> returnResult = new Page<>(current, pageSize);
+        Page<PostPageDto> returnResult = new Page<>(current, pageSize);
         LambdaQueryWrapper<Resource> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper
                 .eq(Resource::getBelong, id)
@@ -331,12 +328,12 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         if (userResourcePageVo == null) {
             this.page(page, lambdaQueryWrapper);
             BeanUtils.copyProperties(page, returnResult, "records");
-            List<UserResourcePageDto> pageDtoList = page.getRecords().stream().map(resource -> {
+            List<PostPageDto> pageDtoList = page.getRecords().stream().map(resource -> {
                 Integer status = resource.getStatus();
                 if (!Objects.equals(teacherLoginDto.getId(), id) && status == 1) {
                     return null;
                 }
-                UserResourcePageDto userResourcePageDto = new UserResourcePageDto();
+                PostPageDto userResourcePageDto = new PostPageDto();
 
                 Teacher teacher = teacherMapper.selectById(resource.getBelong());
                 if (teacher == null) {
@@ -379,12 +376,12 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
 
         this.page(page, lambdaQueryWrapper);
         BeanUtils.copyProperties(page, returnResult, "records");
-        List<UserResourcePageDto> pageDtoList = page.getRecords().stream().map(resource -> {
+        List<PostPageDto> pageDtoList = page.getRecords().stream().map(resource -> {
             Integer status = resource.getStatus();
             if (!Objects.equals(teacherLoginDto.getId(), id) && status == 1) {
                 return null;
             }
-            UserResourcePageDto userResourcePageDto = new UserResourcePageDto();
+            PostPageDto userResourcePageDto = new PostPageDto();
 
             Teacher teacher = teacherMapper.selectById(resource.getBelong());
             if (teacher == null) {
@@ -530,5 +527,154 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         if (updateResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "修改教学资料失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
+    }
+
+    @Override
+    public Page<PostPageDto> getPostPage(Integer current, Integer pageSize, HttpServletRequest request, PostPageVo postPageVo) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
+        }
+        Page<Resource> page = new Page<>(current, pageSize);
+        Page<PostPageDto> returnResult = new Page<>(current, pageSize);
+        LambdaQueryWrapper<Resource> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper
+                .orderByAsc(Resource::getCreateTime);
+
+        if (postPageVo == null) {
+            this.page(page, lambdaQueryWrapper);
+            BeanUtils.copyProperties(page, returnResult, "records");
+            List<PostPageDto> pageDtoList = page.getRecords().stream().map(resource -> {
+                if (resource.getStatus() == 1) {
+                    return null;
+                }
+                PostPageDto postPageDto = new PostPageDto();
+
+                Teacher teacher = teacherMapper.selectById(resource.getBelong());
+                if (teacher == null) {
+                    throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS));
+                }
+                postPageDto.setUserId(teacher.getId());
+                postPageDto.setUserName(teacher.getName());
+                postPageDto.setUserAvatarUrl(teacher.getAvatar());
+                College college = collegeMapper.selectById(teacher.getBelong());
+                if (college == null) {
+                    throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS));
+                }
+                postPageDto.setCollegeName(college.getName());
+
+                postPageDto.setResourceStatus(resource.getStatus());
+                postPageDto.setResourceId(resource.getId());
+                postPageDto.setResourceName(resource.getName());
+                postPageDto.setResourceInfo(resource.getInfo());
+                postPageDto.setResourceScore(resource.getScore());
+                postPageDto.setResourceUrl(resource.getUrl());
+                postPageDto.setCreateTime(resource.getCreateTime());
+                LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+                commentLambdaQueryWrapper.eq(Comment::getResource, resource.getId());
+                Integer commentCount = Math.toIntExact(commentMapper.selectCount(commentLambdaQueryWrapper));
+                postPageDto.setCommentCount(commentCount);
+
+                LambdaUpdateWrapper<Collect> collectLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+                collectLambdaUpdateWrapper.eq(Collect::getBelong, teacherLoginDto.getId());
+                List<Collect> collects = collectMapper.selectList(collectLambdaUpdateWrapper);
+                if (Boolean.TRUE.equals(collects.stream().map(Collect::getResource).collect(Collectors.toList()).contains(resource.getId()))) {
+                    postPageDto.setCollectStatus(1);
+                } else {
+                    postPageDto.setCollectStatus(0);
+                }
+
+                return postPageDto;
+            }).collect(Collectors.toList());
+            pageDtoList.removeIf(Objects::isNull);
+            returnResult.setTotal(pageDtoList.size());
+            returnResult.setRecords(pageDtoList);
+            return returnResult;
+        }
+
+        lambdaQueryWrapper
+                .like(!StringUtils.isEmpty(postPageVo.getName()), Resource::getName, postPageVo.getName())
+                .like(!StringUtils.isEmpty(postPageVo.getInfo()), Resource::getInfo, postPageVo.getInfo());
+        this.page(page, lambdaQueryWrapper);
+        BeanUtils.copyProperties(page, returnResult, "records");
+
+        String belongName = postPageVo.getBelongName();
+        List<Long> belongIds = null;
+        if (!StringUtils.isEmpty(belongName)) {
+            LambdaQueryWrapper<Teacher> belongNameLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            belongNameLambdaQueryWrapper.like(Teacher::getName, belongName);
+            List<Teacher> teachers = teacherMapper.selectList(belongNameLambdaQueryWrapper);
+            belongIds = teachers.stream().map(Teacher::getId).collect(Collectors.toList());
+        }
+        String collegeName = postPageVo.getCollegeName();
+        List<Long> collegeIds = null;
+        if (!StringUtils.isEmpty(collegeName)) {
+            LambdaQueryWrapper<College> belongNameLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            belongNameLambdaQueryWrapper.like(College::getName, collegeName);
+            List<College> colleges = collegeMapper.selectList(belongNameLambdaQueryWrapper);
+            collegeIds = colleges.stream().map(College::getId).collect(Collectors.toList());
+        }
+
+        if (belongIds != null && belongIds.isEmpty()) {
+            page.setRecords(new ArrayList<>());
+        }
+        if (collegeIds != null && collegeIds.isEmpty()) {
+            page.setRecords(new ArrayList<>());
+        }
+
+        List<Long> finalBelongIds = belongIds;
+        List<Long> finalCollegeIds = collegeIds;
+
+        List<PostPageDto> pageDtoList = page.getRecords().stream().map(resource -> {
+            if (finalBelongIds != null && !finalBelongIds.isEmpty() && !finalBelongIds.contains(resource.getBelong())) {
+                return null;
+            }
+            if (finalCollegeIds != null && !finalCollegeIds.isEmpty() && !finalCollegeIds.contains(collegeMapper.selectById(teacherMapper.selectById(resource.getBelong()).getBelong()).getId())) {
+                return null;
+            }
+
+            if (resource.getStatus() == 1) {
+                return null;
+            }
+            PostPageDto postPageDto = new PostPageDto();
+
+            Teacher teacher = teacherMapper.selectById(resource.getBelong());
+            if (teacher == null) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS));
+            }
+            postPageDto.setUserId(teacher.getId());
+            postPageDto.setUserName(teacher.getName());
+            postPageDto.setUserAvatarUrl(teacher.getAvatar());
+            College college = collegeMapper.selectById(teacher.getBelong());
+            if (college == null) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS));
+            }
+            postPageDto.setCollegeName(college.getName());
+            postPageDto.setResourceStatus(resource.getStatus());
+            postPageDto.setResourceId(resource.getId());
+            postPageDto.setResourceName(resource.getName());
+            postPageDto.setResourceInfo(resource.getInfo());
+            postPageDto.setResourceScore(resource.getScore());
+            postPageDto.setResourceUrl(resource.getUrl());
+            LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            commentLambdaQueryWrapper.eq(Comment::getResource, resource.getId());
+            Integer commentCount = Math.toIntExact(commentMapper.selectCount(commentLambdaQueryWrapper));
+            postPageDto.setCommentCount(commentCount);
+
+            LambdaUpdateWrapper<Collect> collectLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+            collectLambdaUpdateWrapper.eq(Collect::getBelong, teacherLoginDto.getId());
+            List<Collect> collects = collectMapper.selectList(collectLambdaUpdateWrapper);
+            if (Boolean.TRUE.equals(collects.stream().map(Collect::getResource).collect(Collectors.toList()).contains(resource.getId()))) {
+                postPageDto.setCollectStatus(1);
+            } else {
+                postPageDto.setCollectStatus(0);
+            }
+
+            return postPageDto;
+        }).collect(Collectors.toList());
+        pageDtoList.removeIf(Objects::isNull);
+        returnResult.setTotal(pageDtoList.size());
+        returnResult.setRecords(pageDtoList);
+        return returnResult;
     }
 }
