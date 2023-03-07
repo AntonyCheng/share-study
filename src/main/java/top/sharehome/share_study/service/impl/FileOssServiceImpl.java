@@ -97,7 +97,11 @@ public class FileOssServiceImpl implements FileOssService {
         clientConfig.setHttpProtocol(HttpProtocol.https);
         // 3 生成 cos 客户端并且上传文件
         COSClient cosClient = new COSClient(cred, clientConfig);
-        String key = url.split(".myqcloud.com/")[1];
+        String[] split = url.split(".myqcloud.com/");
+        if (split.length != 2) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.OSS_DELETES_OBJECTS_EXCEPTIONALLY), "链接错误");
+        }
+        String key = split[1];
         try {
             cosClient.deleteObject(bucketName, key);
         } catch (CosClientException e) {

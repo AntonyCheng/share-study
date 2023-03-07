@@ -313,6 +313,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public Page<PostPageDto> getUserResourcePage(Long id, Integer current, Integer pageSize, HttpServletRequest request, UserResourcePageVo userResourcePageVo) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
         if (teacherLoginDto == null) {
@@ -418,6 +419,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void deleteUserResource(Long id, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
 
@@ -458,6 +460,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public UserResourceGetDto getUserResource(Long id, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
         if (Objects.isNull(teacherLoginDto)) {
@@ -489,6 +492,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void updateUserResource(UserResourceUpdateVo userResourceUpdateVo, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
         if (Objects.isNull(teacherLoginDto)) {
@@ -530,7 +534,8 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     }
 
     @Override
-    public Page<PostPageDto> getPostPage(Integer current, Integer pageSize, HttpServletRequest request, PostPageVo postPageVo) {
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
+    public Page<PostPageDto> pagePost(Integer current, Integer pageSize, HttpServletRequest request, PostPageVo postPageVo) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
         if (teacherLoginDto == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
@@ -577,12 +582,9 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
 
                 LambdaUpdateWrapper<Collect> collectLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
                 collectLambdaUpdateWrapper.eq(Collect::getBelong, teacherLoginDto.getId());
-                List<Collect> collects = collectMapper.selectList(collectLambdaUpdateWrapper);
-                if (Boolean.TRUE.equals(collects.stream().map(Collect::getResource).collect(Collectors.toList()).contains(resource.getId()))) {
-                    postPageDto.setCollectStatus(1);
-                } else {
-                    postPageDto.setCollectStatus(0);
-                }
+                List<Collect> collectList = collectMapper.selectList(collectLambdaUpdateWrapper);
+                List<Long> resourceIds = collectList.stream().map(Collect::getResource).collect(Collectors.toList());
+                postPageDto.setCollectStatus(resourceIds.contains(resource.getId()) ? 1 : 0);
 
                 return postPageDto;
             }).collect(Collectors.toList());
@@ -677,4 +679,87 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         returnResult.setRecords(pageDtoList);
         return returnResult;
     }
+
+    @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
+    public void add(PostAddVo postAddVo, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
+        }
+        if (!Objects.equals(postAddVo.getBelong(), teacherLoginDto.getId())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED));
+        }
+
+        Resource resource = new Resource();
+        BeanUtils.copyProperties(postAddVo, resource);
+
+        int insertResult = resourceMapper.insert(resource);
+
+        // 判断数据库插入结果
+        if (insertResult == 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_ADDITION_FAILED), "添加教学资料失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+        }
+
+        LambdaUpdateWrapper<Teacher> teacherLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        teacherLambdaUpdateWrapper
+                .set(Teacher::getScore, teacherLoginDto.getScore() + 1)
+                .eq(Teacher::getId, teacherLoginDto.getId());
+        teacherMapper.update(null, teacherLambdaUpdateWrapper);
+    }
+
+    @Override
+    public PostInfoDto info(Long id, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
+        }
+
+        Resource resource = resourceMapper.selectById(id);
+        if (resource == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.RESOURCE_NOT_EXISTS), "教学资料不存在");
+        }
+
+        Teacher teacher = teacherMapper.selectById(resource.getBelong());
+        if (teacher == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "教师信息不存在");
+        }
+
+        College college = collegeMapper.selectById(teacher.getBelong());
+        if (college == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "高校不存在");
+        }
+
+        PostInfoDto postInfoDto = new PostInfoDto();
+        postInfoDto.setUserId(teacher.getId());
+        postInfoDto.setUserName(teacher.getName());
+        postInfoDto.setUserAvatarUrl(teacher.getAvatar());
+
+        postInfoDto.setCollegeName(college.getName());
+
+        Integer status = resource.getStatus();
+        if (status == 1) {
+            postInfoDto.setResourceStatus(status);
+            return postInfoDto;
+        }
+        postInfoDto.setResourceStatus(status);
+        postInfoDto.setResourceId(resource.getId());
+        postInfoDto.setResourceName(resource.getName());
+        postInfoDto.setResourceInfo(resource.getInfo());
+        postInfoDto.setResourceUrl(resource.getUrl());
+        postInfoDto.setResourceScore(resource.getScore());
+
+        LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        commentLambdaQueryWrapper.eq(Comment::getResource, resource.getId());
+        postInfoDto.setCommentCount(Math.toIntExact(commentMapper.selectCount(commentLambdaQueryWrapper)));
+
+        LambdaQueryWrapper<Collect> collectLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        collectLambdaQueryWrapper.eq(Collect::getBelong, teacher.getId());
+        List<Collect> collectList = collectMapper.selectList(collectLambdaQueryWrapper);
+        List<Long> resourceIds = collectList.stream().map(Collect::getResource).collect(Collectors.toList());
+        postInfoDto.setCollectStatus(resourceIds.contains(id) ? 1 : 0);
+
+        return postInfoDto;
+    }
+
 }

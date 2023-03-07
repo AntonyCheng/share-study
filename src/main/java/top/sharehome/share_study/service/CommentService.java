@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import top.sharehome.share_study.model.dto.CommentGetDto;
 import top.sharehome.share_study.model.dto.CommentPageDto;
+import top.sharehome.share_study.model.dto.PostCommentPageDto;
 import top.sharehome.share_study.model.dto.UserCommentPageDto;
 import top.sharehome.share_study.model.entity.Comment;
 import top.sharehome.share_study.model.vo.CommentPageVo;
@@ -94,4 +95,15 @@ public interface CommentService extends IService<Comment> {
      * @param request 获取操作者的登录状态
      */
     void deleteUserCommentBatch(HttpServletRequest request);
+
+    /**
+     * 资料详情评论分页
+     *
+     * @param id       教学资料ID
+     * @param current  当前页
+     * @param pageSize 页面条数
+     * @param request  获取操作者的登录状态
+     * @return 返回分页结果
+     */
+    Page<PostCommentPageDto> pageResourceComment(Long id, Integer current, Integer pageSize, HttpServletRequest request);
 }

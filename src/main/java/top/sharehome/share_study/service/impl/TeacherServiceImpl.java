@@ -659,6 +659,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public TeacherLoginDto getAdminLogin(Long id, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
         if (teacherLoginDto == null) {
@@ -692,6 +693,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public TeacherLoginDto getUserLogin(Long id, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
         if (teacherLoginDto == null) {
@@ -724,6 +726,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public UserGetInfoDto getUserInfo(Long id, HttpServletRequest request) {
         // 判断被操作数据是否为空
         Teacher teacher = teacherMapper.selectById(id);
@@ -745,6 +748,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void updateUserSelf(UserUpdateInfoSelfVo userUpdateInfoSelfVo, HttpServletRequest request) {
         // 鉴定操作者的权限
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);

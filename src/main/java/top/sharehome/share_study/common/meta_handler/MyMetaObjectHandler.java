@@ -88,15 +88,15 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
         }
 
         if (metaObject.hasSetter(MESSAGE_TOTAL)) {
-            metaObject.setValue(MESSAGE_TOTAL, 0L);
+            metaObject.setValue(MESSAGE_TOTAL, 0);
         }
 
         if (metaObject.hasSetter(MESSAGE_READ)) {
-            metaObject.setValue(MESSAGE_READ, 0L);
+            metaObject.setValue(MESSAGE_READ, 0);
         }
 
         if (metaObject.hasSetter(SCORE)) {
-            metaObject.setValue(SCORE, 0L);
+            metaObject.setValue(SCORE, 0);
         }
     }
 

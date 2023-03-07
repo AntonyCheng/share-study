@@ -7,8 +7,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import top.sharehome.share_study.common.constant.CommonConstant;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
+import top.sharehome.share_study.common.exception_handler.customize.CustomizeTransactionException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
 import top.sharehome.share_study.mapper.CollectMapper;
@@ -46,6 +48,7 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
     private CollectMapper collectMapper;
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public Page<UserCollectPageDto> getUserResourcePage(Long id, Integer current, Integer pageSize, HttpServletRequest request, UserCollectPageVo userCollectPageVo) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
         if (teacherLoginDto == null) {
@@ -146,6 +149,7 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void deleteUserCollect(Long id, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
 

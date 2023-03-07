@@ -2,10 +2,7 @@ package top.sharehome.share_study.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import top.sharehome.share_study.model.dto.ResourceGetDto;
-import top.sharehome.share_study.model.dto.ResourcePageDto;
-import top.sharehome.share_study.model.dto.UserResourceGetDto;
-import top.sharehome.share_study.model.dto.PostPageDto;
+import top.sharehome.share_study.model.dto.*;
 import top.sharehome.share_study.model.entity.Resource;
 import top.sharehome.share_study.model.vo.*;
 
@@ -116,5 +113,22 @@ public interface ResourceService extends IService<Resource> {
      * @param postPageVo 帖子分页模糊查询参数
      * @return 返回分页结果
      */
-    Page<PostPageDto> getPostPage(Integer current, Integer pageSize, HttpServletRequest request, PostPageVo postPageVo);
+    Page<PostPageDto> pagePost(Integer current, Integer pageSize, HttpServletRequest request, PostPageVo postPageVo);
+
+    /**
+     * 发布帖子接口
+     *
+     * @param postAddVo 帖子添加Vo
+     * @param request   获取Session中的登录状态
+     */
+    void add(PostAddVo postAddVo, HttpServletRequest request);
+
+    /**
+     * 帖子详情接口
+     *
+     * @param id      教学资料ID
+     * @param request 获取Session中的登录状态
+     * @return 帖子详情Dto对象
+     */
+    PostInfoDto info(Long id, HttpServletRequest request);
 }

@@ -16,13 +16,12 @@ import top.sharehome.share_study.common.exception_handler.customize.CustomizeRet
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeTransactionException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
+import top.sharehome.share_study.mapper.CollegeMapper;
 import top.sharehome.share_study.mapper.CommentMapper;
 import top.sharehome.share_study.mapper.ResourceMapper;
 import top.sharehome.share_study.mapper.TeacherMapper;
-import top.sharehome.share_study.model.dto.CommentGetDto;
-import top.sharehome.share_study.model.dto.CommentPageDto;
-import top.sharehome.share_study.model.dto.TeacherLoginDto;
-import top.sharehome.share_study.model.dto.UserCommentPageDto;
+import top.sharehome.share_study.model.dto.*;
+import top.sharehome.share_study.model.entity.College;
 import top.sharehome.share_study.model.entity.Comment;
 import top.sharehome.share_study.model.entity.Resource;
 import top.sharehome.share_study.model.entity.Teacher;
@@ -56,6 +55,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
     @javax.annotation.Resource
     private ResourceMapper resourceMapper;
+
+    @javax.annotation.Resource
+    private CollegeMapper collegeMapper;
 
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
@@ -375,6 +377,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public Page<UserCommentPageDto> getUserCommentPage(HttpServletRequest request, Integer current, Integer pageSize) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
         if (teacherLoginDto == null) {
@@ -395,12 +398,14 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
             if (teacher == null) {
                 return null;
             }
-
+            Resource resource = resourceMapper.selectById(comment.getResource());
             UserCommentPageDto userCommentPageDto = new UserCommentPageDto();
             userCommentPageDto.setId(comment.getId());
             userCommentPageDto.setCreateTime(LocalDateTime.now());
+            userCommentPageDto.setBelongId(comment.getBelong());
             userCommentPageDto.setBelongName(teacher.getName());
-            userCommentPageDto.setResourceName(resourceMapper.selectById(comment.getResource()).getName());
+            userCommentPageDto.setResourceId(comment.getResource());
+            userCommentPageDto.setResourceName(resource.getName());
             userCommentPageDto.setReadStatus(comment.getReadStatus());
             userCommentPageDto.setStatus(comment.getStatus());
             if (comment.getStatus() == 0) {
@@ -417,6 +422,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void deleteUserComment(Long id, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
         if (teacherLoginDto == null) {
@@ -444,6 +450,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void deleteUserCommentBatch(HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
         if (teacherLoginDto == null) {
@@ -465,5 +472,68 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         if (updateResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "删除交流评论失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
+    }
+
+    @Override
+    public Page<PostCommentPageDto> pageResourceComment(Long id, Integer current, Integer pageSize, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
+        }
+        Page<Comment> page = new Page<>(current, pageSize);
+        Page<PostCommentPageDto> returnResult = new Page<>(current, pageSize);
+        LambdaQueryWrapper<Comment> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper
+                .eq(Comment::getResource, id)
+                .orderByDesc(Comment::getCreateTime);
+
+        this.page(page, lambdaQueryWrapper);
+        BeanUtils.copyProperties(page, returnResult, "records");
+        List<PostCommentPageDto> pageDtoList = page.getRecords().stream().map(comment -> {
+            if (comment.getStatus() == 1) {
+                return null;
+            }
+            Resource resource = resourceMapper.selectById(id);
+            if (resource == null) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.RESOURCE_NOT_EXISTS), "教学资料不存在");
+            }
+            Teacher belongTeacher = teacherMapper.selectById(comment.getBelong());
+            if (belongTeacher == null) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "发送评论的老师不存在");
+            }
+            College belongCollege = collegeMapper.selectById(belongTeacher.getBelong());
+            if (belongCollege == null) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "发送者的学校不存在");
+            }
+            Teacher sendTeacher = teacherMapper.selectById(comment.getSend());
+            if (sendTeacher == null) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "接收评论的老师不存在");
+            }
+            College sendCollege = collegeMapper.selectById(sendTeacher.getBelong());
+            if (sendCollege == null) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "接收者的学校不存在");
+            }
+
+            PostCommentPageDto postCommentPageDto = new PostCommentPageDto();
+            postCommentPageDto.setResourceId(resource.getId());
+            postCommentPageDto.setBelong(belongTeacher.getId());
+            postCommentPageDto.setBelongName(belongTeacher.getName());
+            postCommentPageDto.setBelongAvatarUrl(belongTeacher.getAvatar());
+            postCommentPageDto.setBelongCollege(belongCollege.getName());
+            postCommentPageDto.setSend(sendTeacher.getId());
+            postCommentPageDto.setSendName(sendTeacher.getName());
+            postCommentPageDto.setSendAvatarUrl(sendTeacher.getAvatar());
+            postCommentPageDto.setSendCollege(sendCollege.getName());
+            postCommentPageDto.setCommentId(comment.getId());
+            postCommentPageDto.setCommentContent(comment.getContent());
+            postCommentPageDto.setCommentOssUrl(comment.getUrl());
+            postCommentPageDto.setCommentStatus(comment.getStatus());
+
+            return postCommentPageDto;
+        }).collect(Collectors.toList());
+        pageDtoList.removeIf(Objects::isNull);
+        returnResult.setTotal(pageDtoList.size());
+        returnResult.setRecords(pageDtoList);
+        return returnResult;
     }
 }
