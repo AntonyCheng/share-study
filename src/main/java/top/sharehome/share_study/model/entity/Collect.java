@@ -1,6 +1,7 @@
 package top.sharehome.share_study.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -26,7 +27,7 @@ public class Collect implements Serializable {
     /**
      * 收藏唯一ID
      */
-    @TableId(value = "collect_id", type = IdType.INPUT)
+    @TableId(value = "collect_id", type = IdType.ASSIGN_ID)
     @ApiModelProperty(value = "收藏唯一ID")
     private Long id;
 
@@ -54,9 +55,16 @@ public class Collect implements Serializable {
     /**
      * 被收藏的教学资料简介
      */
-    @TableField(value = "collect_name")
+    @TableField(value = "collect_info")
     @ApiModelProperty(value = "被收藏的教学资料简介")
     private String info;
+
+    /**
+     * 收藏状态
+     */
+    @TableField(value = "collect_status", fill = FieldFill.INSERT)
+    @ApiModelProperty(value = "收藏状态（0表示被收藏，1表示取消收藏）")
+    private Integer status;
 
     /**
      * 收藏时间

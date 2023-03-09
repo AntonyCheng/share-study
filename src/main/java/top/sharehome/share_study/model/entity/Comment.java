@@ -76,7 +76,7 @@ public class Comment implements Serializable {
     private String url;
 
     /**
-     * 评论是否已读（0表示未读，1表示已读）
+     * 评论是否已读（0表示未读，1表示已读，2表示接收者已删除）
      */
     @TableField(value = "comment_read_status", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "评论是否已读（0表示未读，1表示已读，2表示接收者已删除）")

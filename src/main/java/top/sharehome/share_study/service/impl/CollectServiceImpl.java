@@ -23,6 +23,7 @@ import top.sharehome.share_study.model.entity.Collect;
 import top.sharehome.share_study.model.entity.College;
 import top.sharehome.share_study.model.entity.Resource;
 import top.sharehome.share_study.model.entity.Teacher;
+import top.sharehome.share_study.model.vo.PostCollectUpdateVo;
 import top.sharehome.share_study.model.vo.UserCollectPageVo;
 import top.sharehome.share_study.service.CollectService;
 
@@ -152,7 +153,9 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void deleteUserCollect(Long id, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
-
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "用户未登录");
+        }
         if (!Objects.equals(teacherLoginDto.getId(), collectMapper.selectById(id).getBelong())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "不能在用户详情界面删除其他用户的收藏");
         }
@@ -189,6 +192,86 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
 
         if (deleteResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "收藏数据删除失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
+    public Boolean updateCollect(PostCollectUpdateVo postCollectUpdateVo, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "用户未登录");
+        }
+
+        LambdaQueryWrapper<Collect> collectLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        collectLambdaQueryWrapper.eq(Collect::getBelong, teacherLoginDto.getId());
+        List<Collect> collectList = collectMapper.selectList(collectLambdaQueryWrapper);
+        List<Long> resourceIds = collectList.stream().map(Collect::getResource).collect(Collectors.toList());
+        if (resourceIds.contains(postCollectUpdateVo.getResource())) {
+            collectLambdaQueryWrapper.eq(Collect::getResource, postCollectUpdateVo.getResource());
+            Collect collect = collectMapper.selectOne(collectLambdaQueryWrapper);
+            LambdaUpdateWrapper<Collect> collectLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+            collectLambdaUpdateWrapper
+                    .eq(Collect::getBelong, teacherLoginDto.getId())
+                    .eq(Collect::getResource, postCollectUpdateVo.getResource())
+                    .set(collect.getStatus() == 0, Collect::getStatus, 1)
+                    .set(collect.getStatus() == 1, Collect::getStatus, 0);
+            int updateCollectResult = collectMapper.update(null, collectLambdaUpdateWrapper);
+            if (updateCollectResult == 0) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "收藏数据更新失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+            }
+
+            LambdaUpdateWrapper<Resource> resourceLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+            resourceLambdaUpdateWrapper
+                    .eq(Resource::getId, postCollectUpdateVo.getResource())
+                    .set(collect.getStatus() == 0, Resource::getScore, resourceMapper.selectById(postCollectUpdateVo.getResource()).getScore() - 1)
+                    .set(collect.getStatus() == 1, Resource::getScore, resourceMapper.selectById(postCollectUpdateVo.getResource()).getScore() + 1);
+            int updateResourceResult = resourceMapper.update(null, resourceLambdaUpdateWrapper);
+            if (updateResourceResult == 0) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "教学资源数据更新失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+            }
+
+            LambdaUpdateWrapper<Teacher> teacherLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+            teacherLambdaUpdateWrapper
+                    .eq(Teacher::getId, postCollectUpdateVo.getBelong())
+                    .set(collect.getStatus() == 0, Teacher::getScore, teacherMapper.selectById(postCollectUpdateVo.getBelong()).getScore() - 1)
+                    .set(collect.getStatus() == 1, Teacher::getScore, resourceMapper.selectById(postCollectUpdateVo.getBelong()).getScore() + 1);
+            int updateTeacherResult = teacherMapper.update(null, teacherLambdaUpdateWrapper);
+            if (updateTeacherResult == 0) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "教师数据更新失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+            }
+
+            return collect.getStatus() != 0;
+        } else {
+            Resource resource = resourceMapper.selectById(postCollectUpdateVo.getResource());
+            Collect collect = new Collect();
+            collect.setBelong(teacherLoginDto.getId());
+            collect.setResource(postCollectUpdateVo.getResource());
+            collect.setName(resource.getName());
+            collect.setInfo(resource.getInfo());
+            int insertResult = collectMapper.insert(collect);
+            if (insertResult == 0) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_ADDITION_FAILED), "收藏数据新增失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+            }
+
+            LambdaUpdateWrapper<Resource> resourceLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+            resourceLambdaUpdateWrapper
+                    .eq(Resource::getId, postCollectUpdateVo.getResource())
+                    .set(Resource::getScore, resourceMapper.selectById(postCollectUpdateVo.getResource()).getScore() + 1);
+            int updateResourceResult = resourceMapper.update(null, resourceLambdaUpdateWrapper);
+            if (updateResourceResult == 0) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "教学资源数据更新失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+            }
+
+            LambdaUpdateWrapper<Teacher> teacherLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+            teacherLambdaUpdateWrapper
+                    .eq(Teacher::getId, postCollectUpdateVo.getBelong())
+                    .set(Teacher::getScore, teacherMapper.selectById(postCollectUpdateVo.getBelong()).getScore() - 1);
+            int updateTeacherResult = teacherMapper.update(null, teacherLambdaUpdateWrapper);
+            if (updateTeacherResult == 0) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "教师数据更新失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+            }
+            return true;
         }
     }
 }

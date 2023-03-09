@@ -9,6 +9,7 @@ import top.sharehome.share_study.model.dto.UserCommentPageDto;
 import top.sharehome.share_study.model.entity.Comment;
 import top.sharehome.share_study.model.vo.CommentPageVo;
 import top.sharehome.share_study.model.vo.CommentUpdateVo;
+import top.sharehome.share_study.model.vo.PostCommentAddVo;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -106,4 +107,20 @@ public interface CommentService extends IService<Comment> {
      * @return 返回分页结果
      */
     Page<PostCommentPageDto> pageResourceComment(Long id, Integer current, Integer pageSize, HttpServletRequest request);
+
+    /**
+     * 新增评论
+     *
+     * @param postCommentAddDto 添加评论Dto对象
+     * @param request           获取Session中登录状态
+     */
+    void addComment(PostCommentAddVo postCommentAddDto, HttpServletRequest request);
+
+    /**
+     * 用户自己删除自己的评论
+     *
+     * @param id      被删的评论ID
+     * @param request 获取Session中登录状态
+     */
+    void deleteComment(Long id, HttpServletRequest request);
 }

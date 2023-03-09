@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import top.sharehome.share_study.model.dto.UserCollectPageDto;
 import top.sharehome.share_study.model.entity.Collect;
+import top.sharehome.share_study.model.vo.PostCollectUpdateVo;
 import top.sharehome.share_study.model.vo.UserCollectPageVo;
 
 import javax.servlet.http.HttpServletRequest;
@@ -33,4 +34,13 @@ public interface CollectService extends IService<Collect> {
      * @param request 获取操作者的登录状态
      */
     void deleteUserCollect(Long id, HttpServletRequest request);
+
+    /**
+     * 修改收藏状态
+     *
+     * @param postCollectUpdateVo 修改收藏Vo对象
+     * @param request             获取Session登录状态
+     * @return 返回收藏结果
+     */
+    Boolean updateCollect(PostCollectUpdateVo postCollectUpdateVo, HttpServletRequest request);
 }

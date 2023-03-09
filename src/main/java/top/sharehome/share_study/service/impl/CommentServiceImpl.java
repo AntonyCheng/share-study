@@ -27,6 +27,7 @@ import top.sharehome.share_study.model.entity.Resource;
 import top.sharehome.share_study.model.entity.Teacher;
 import top.sharehome.share_study.model.vo.CommentPageVo;
 import top.sharehome.share_study.model.vo.CommentUpdateVo;
+import top.sharehome.share_study.model.vo.PostCommentAddVo;
 import top.sharehome.share_study.service.CommentService;
 
 import javax.servlet.http.HttpServletRequest;
@@ -470,11 +471,12 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
         // 判断数据库插入结果
         if (updateResult == 0) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "删除交流评论失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "删除交流评论失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
     }
 
     @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public Page<PostCommentPageDto> pageResourceComment(Long id, Integer current, Integer pageSize, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
         if (teacherLoginDto == null) {
@@ -535,5 +537,46 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         returnResult.setTotal(pageDtoList.size());
         returnResult.setRecords(pageDtoList);
         return returnResult;
+    }
+
+    @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
+    public void addComment(PostCommentAddVo postCommentAddDto, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
+        }
+
+        Comment comment = new Comment();
+        comment.setBelong(teacherLoginDto.getId());
+        comment.setSend(postCommentAddDto.getSend());
+        comment.setResource(postCommentAddDto.getResource());
+        comment.setContent(postCommentAddDto.getContent());
+        comment.setUrl(postCommentAddDto.getUrl());
+
+        commentMapper.insert(comment);
+    }
+
+    @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
+    public void deleteComment(Long id, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
+        }
+
+        LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        commentLambdaQueryWrapper.eq(Comment::getBelong, teacherLoginDto.getId());
+        List<Comment> comments = commentMapper.selectList(commentLambdaQueryWrapper);
+        List<Long> commentIds = comments.stream().map(Comment::getId).collect(Collectors.toList());
+        if (!commentIds.contains(id)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED));
+        }
+
+        int deleteResult = commentMapper.deleteById(id);
+
+        if (deleteResult == 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "删除交流评论失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+        }
     }
 }
