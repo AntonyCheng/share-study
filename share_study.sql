@@ -11,11 +11,32 @@
  Target Server Version : 80028
  File Encoding         : 65001
 
- Date: 04/03/2023 19:45:48
+ Date: 11/03/2023 00:08:13
 */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for t_collect
+-- ----------------------------
+DROP TABLE IF EXISTS `t_collect`;
+CREATE TABLE `t_collect`  (
+  `collect_id` bigint NOT NULL COMMENT '收藏唯一ID',
+  `collect_belong` bigint NOT NULL COMMENT '收藏者ID',
+  `collect_resource` bigint NOT NULL COMMENT '被收藏的教学资料ID',
+  `collect_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '被收藏的教学资料名称',
+  `collect_info` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '被收藏的教学资料简介',
+  `collect_status` tinyint NOT NULL DEFAULT 0 COMMENT '收藏状态（0表示已经收藏，1表示取消收藏）',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '收藏时间',
+  `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '（0表示未删除，1表示已删除）',
+  PRIMARY KEY (`collect_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '收藏表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of t_collect
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for t_college
@@ -38,7 +59,6 @@ CREATE TABLE `t_college`  (
 -- ----------------------------
 INSERT INTO `t_college` VALUES (1627965942293053441, '哈尔滨商业大学', '10240', '2023-02-21 17:38:21', '2023-02-22 01:18:22', 0);
 INSERT INTO `t_college` VALUES (1628076603207450626, '北京大学', '10001', '2023-02-22 00:58:05', '2023-02-22 01:18:22', 0);
-INSERT INTO `t_college` VALUES (1628446055090606081, '测试大学', '88888', '2023-02-23 01:26:09', '2023-03-01 20:55:55', 0);
 
 -- ----------------------------
 -- Table structure for t_comment
@@ -51,7 +71,7 @@ CREATE TABLE `t_comment`  (
   `comment_send` bigint NOT NULL COMMENT '接收评论的教师用户ID',
   `comment_content` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '评论内容',
   `comment_url` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '评论中所带的文件OSSUrl',
-  `comment_read_status` tinyint NOT NULL DEFAULT 0 COMMENT '评论是否已读（0表示未读，1表示已读）',
+  `comment_read_status` tinyint NOT NULL DEFAULT 0 COMMENT '评论是否已读（0表示未读，1表示已读，2表示接收者已删除）',
   `comment_status` tinyint NOT NULL DEFAULT 0 COMMENT '评论状态(0表示正常，1表示已被封禁)',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '评论发布时间',
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '评论更新时间',
@@ -63,9 +83,6 @@ CREATE TABLE `t_comment`  (
 -- ----------------------------
 -- Records of t_comment
 -- ----------------------------
-INSERT INTO `t_comment` VALUES (1, 2, 1628303246513643522, 1628303016208605185, '这是user发给admin的消息', NULL, 0, 0, '2023-02-28 22:30:17', '2023-02-28 22:30:17', 1);
-INSERT INTO `t_comment` VALUES (2, 3, 1628303016208605185, 1628303184442138626, '这是admin发给super的消息', NULL, 0, 0, '2023-02-28 22:31:03', '2023-02-28 22:31:03', 0);
-INSERT INTO `t_comment` VALUES (3, 1, 1628303184442138626, 1628303246513643522, '这是super发给user的消息', NULL, 0, 0, '2023-02-28 22:31:32', '2023-02-28 22:31:32', 0);
 
 -- ----------------------------
 -- Table structure for t_resource
@@ -89,9 +106,6 @@ CREATE TABLE `t_resource`  (
 -- ----------------------------
 -- Records of t_resource
 -- ----------------------------
-INSERT INTO `t_resource` VALUES (1, 1628303016208605185, '测试admin', '测试admin', 'test@admin.com', 0, 0, '2023-02-28 08:02:14', '2023-03-01 10:16:37', 0);
-INSERT INTO `t_resource` VALUES (2, 1628303246513643522, '测试user', '测试user', 'test@user.com', 0, 0, '2023-02-28 21:46:05', '2023-03-03 21:34:22', 0);
-INSERT INTO `t_resource` VALUES (3, 1628303184442138626, '测试super', '测试super', 'test@super.com', 0, 0, '2023-02-28 21:46:52', '2023-03-03 21:35:00', 0);
 
 -- ----------------------------
 -- Table structure for t_teacher
@@ -121,9 +135,9 @@ CREATE TABLE `t_teacher`  (
 -- ----------------------------
 -- Records of t_teacher
 -- ----------------------------
-INSERT INTO `t_teacher` VALUES (1628303016208605185, 'admin', '605c8beea36f63abeec7b55e06ebaecf', '管理员', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/super_avatar.jpg', 0, 1627965942293053441, 'admin@admin.com', 1, 0, 0, 0, 1, '2023-02-22 15:57:46', '2023-03-03 21:36:45', 0);
-INSERT INTO `t_teacher` VALUES (1628303184442138626, 'super', '393b05d1a9652eef4b882773c81eae60', '超级管理员', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/super_avatar.jpg', 0, 1628076603207450626, 'super@super.com', 1, 0, 0, 0, 2, '2023-02-22 15:58:26', '2023-03-03 21:36:45', 0);
-INSERT INTO `t_teacher` VALUES (1628303246513643522, 'user', '4af7ffbd5015c334748d00060b9ce132', '用户', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/super_avatar.jpg', 0, 1627965942293053441, 'user@user.com', 1, 0, 0, 0, 0, '2023-02-22 15:58:41', '2023-03-03 21:36:45', 0);
-INSERT INTO `t_teacher` VALUES (1630917423728640002, 'test', '7137fcb1c6a440365676694dce1bbafe', '测试注册', 'http://dummyimage.com/100x100', 0, 1628446055090606081, 'test@test.com', 0, 0, 0, 0, 0, '2023-03-01 21:06:29', '2023-03-01 23:05:21', 0);
+INSERT INTO `t_teacher` VALUES (1628303016208605185, 'admin', '605c8beea36f63abeec7b55e06ebaecf', '管理员', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/default_avatar.jpg', 0, 1627965942293053441, 'admin@admin.com', 0, 0, 0, 0, 1, '2023-02-22 15:57:46', '2023-03-10 23:21:27', 0);
+INSERT INTO `t_teacher` VALUES (1628303184442138626, 'super', '393b05d1a9652eef4b882773c81eae60', '超级管理员', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/default_avatar.jpg', 0, 1628076603207450626, 'super@super.com', 0, 0, 0, 0, 2, '2023-02-22 15:58:26', '2023-03-10 23:21:27', 0);
+INSERT INTO `t_teacher` VALUES (1628303246513643522, 'user', '4af7ffbd5015c334748d00060b9ce132', '用户', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/default_avatar.jpg', 0, 1627965942293053441, 'user@user.com', 0, 0, 0, 0, 0, '2023-02-22 15:58:41', '2023-03-10 23:21:27', 0);
+INSERT INTO `t_teacher` VALUES (1634078677590839297, 'test', '7137fcb1c6a440365676694dce1bbafe', '测试账号', 'https://sharestudy-1306588126.cos.ap-chengdu.myqcloud.com/default_avatar.jpg', 0, 1627965942293053441, 'test@test.com', 0, 0, 0, 0, 0, '2023-03-10 14:28:11', '2023-03-10 23:21:27', 0);
 
 SET FOREIGN_KEY_CHECKS = 1;
