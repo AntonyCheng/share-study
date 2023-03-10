@@ -357,6 +357,11 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
                     userResourcePageDto.setResourceScore(resource.getScore());
                     userResourcePageDto.setResourceUrl(resource.getUrl());
                 }
+                LambdaUpdateWrapper<Collect> collectLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+                collectLambdaUpdateWrapper.eq(Collect::getBelong, teacherLoginDto.getId());
+                List<Collect> collectList = collectMapper.selectList(collectLambdaUpdateWrapper);
+                List<Long> resourceIds = collectList.stream().map(Collect::getResource).collect(Collectors.toList());
+                userResourcePageDto.setCollectStatus(resourceIds.contains(resource.getId()) ? 1 : 0);
                 userResourcePageDto.setCreateTime(resource.getCreateTime());
                 LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
                 commentLambdaQueryWrapper.eq(Comment::getResource, resource.getId());
@@ -466,7 +471,11 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         if (Objects.isNull(teacherLoginDto)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "用户未登录");
         }
-        if (!Objects.equals(teacherLoginDto.getId(), resourceMapper.selectById(id).getBelong())) {
+        Resource resource = resourceMapper.selectById(id);
+        if (Objects.isNull(resource)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.RESOURCE_NOT_EXISTS));
+        }
+        if (!Objects.equals(teacherLoginDto.getId(), resource.getBelong())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "任何用户都无法在个人信息页面获取其他用户的教学资料信息");
         }
 
@@ -498,14 +507,14 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         if (Objects.isNull(teacherLoginDto)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "用户未登录");
         }
-        if (!Objects.equals(teacherLoginDto.getId(), resourceMapper.selectById(userResourceUpdateVo.getId()).getBelong())) {
+        Resource resultFromDatabase = resourceMapper.selectById(userResourceUpdateVo.getId());
+        if (Objects.isNull(resultFromDatabase)){
+            throw new CustomizeReturnException(R.failure(RCodeEnum.RESOURCE_NOT_EXISTS), "教学资料不存在，不需要进行下一步操作");
+        }
+        if (!Objects.equals(teacherLoginDto.getId(), resultFromDatabase.getBelong())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "任何用户都无法在个人信息页面获取其他用户的教学资料信息");
         }
 
-        Resource resultFromDatabase = resourceMapper.selectById(userResourceUpdateVo.getId());
-        if (resultFromDatabase == null) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.RESOURCE_NOT_EXISTS), "教学资料不存在，不需要进行下一步操作");
-        }
         if (Objects.equals(userResourceUpdateVo.getName(), resultFromDatabase.getName())
                 && Objects.equals(userResourceUpdateVo.getInfo(), resultFromDatabase.getInfo())
                 && Objects.equals(userResourceUpdateVo.getUrl(), resultFromDatabase.getUrl())) {
@@ -703,7 +712,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
 
         LambdaUpdateWrapper<Teacher> teacherLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
         teacherLambdaUpdateWrapper
-                .set(Teacher::getScore, teacherLoginDto.getScore() + 1)
+                .set(Teacher::getScore, teacherMapper.selectById(teacherLoginDto.getId()).getScore() + 1)
                 .eq(Teacher::getId, teacherLoginDto.getId());
         teacherMapper.update(null, teacherLambdaUpdateWrapper);
     }

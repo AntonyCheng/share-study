@@ -59,6 +59,11 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
     public static final String MESSAGE_READ = "messageRead";
 
     /**
+     * 需要处理的字段名——readStatus
+     */
+    public static final String READ_STATUS = "readStatus";
+
+    /**
      * 插入时自动填充的字段
      */
     @Override
@@ -97,6 +102,10 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
 
         if (metaObject.hasSetter(SCORE)) {
             metaObject.setValue(SCORE, 0);
+        }
+
+        if (metaObject.hasSetter(READ_STATUS)) {
+            metaObject.setValue(READ_STATUS, 0);
         }
     }
 

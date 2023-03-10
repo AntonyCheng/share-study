@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * EasyExcel 时间转换类
+ * EasyExcel LocalDateTime转换类
  *
  * @author AntonyCheng
  */

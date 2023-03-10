@@ -7,6 +7,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import top.sharehome.share_study.common.converter.ExcelIntegerConverter;
 import top.sharehome.share_study.common.converter.ExcelLocalDateTimeConverter;
 import top.sharehome.share_study.common.converter.ExcelLongConverter;
 
@@ -80,7 +81,7 @@ public class Comment implements Serializable {
      */
     @TableField(value = "comment_read_status", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "评论是否已读（0表示未读，1表示已读，2表示接收者已删除）")
-    @ExcelProperty(value = "评论是否已读", index = 6)
+    @ExcelProperty(value = "评论是否已读", index = 6, converter = ExcelIntegerConverter.class)
     private Integer readStatus;
 
     /**
@@ -88,7 +89,7 @@ public class Comment implements Serializable {
      */
     @TableField(value = "comment_status", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "评论状态(0表示正常，1表示已被封禁)")
-    @ExcelProperty(value = "评论状态", index = 7)
+    @ExcelProperty(value = "评论状态", index = 7, converter = ExcelIntegerConverter.class)
     private Integer status;
 
     /**
@@ -113,7 +114,7 @@ public class Comment implements Serializable {
     @TableField(value = "is_deleted", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "逻辑删除（0表示未删除，1表示已删除）")
     @TableLogic
-    @ExcelProperty(value = "逻辑删除", index = 10)
+    @ExcelProperty(value = "逻辑删除", index = 10, converter = ExcelIntegerConverter.class)
     private Integer isDeleted;
 
     public static final String COL_COMMENT_ID = "comment_id";

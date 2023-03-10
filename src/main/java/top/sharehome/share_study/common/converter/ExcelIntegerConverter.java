@@ -5,14 +5,15 @@ import com.alibaba.excel.enums.CellDataTypeEnum;
 import com.alibaba.excel.metadata.CellData;
 import com.alibaba.excel.metadata.GlobalConfiguration;
 import com.alibaba.excel.metadata.property.ExcelContentProperty;
+import io.swagger.models.auth.In;
 
 /**
- * EasyExcel Long转换类
+ * EasyExcel Integer转换类
  *
  * @author AntonyCheng
  */
 
-public class ExcelLongConverter implements Converter<Long> {
+public class ExcelIntegerConverter implements Converter<Integer> {
 
     @Override
     public Class supportJavaTypeKey() {
@@ -25,12 +26,12 @@ public class ExcelLongConverter implements Converter<Long> {
     }
 
     @Override
-    public Long convertToJavaData(CellData cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) throws Exception {
-        return Long.parseLong(cellData.getStringValue());
+    public Integer convertToJavaData(CellData cellData, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) throws Exception {
+        return Integer.parseInt(cellData.getStringValue());
     }
 
     @Override
-    public CellData<String> convertToExcelData(Long value, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) throws Exception {
+    public CellData<String> convertToExcelData(Integer value, ExcelContentProperty contentProperty, GlobalConfiguration globalConfiguration) throws Exception {
         return new CellData<>(String.valueOf(value));
     }
 }

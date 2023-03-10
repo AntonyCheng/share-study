@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.sharehome.share_study.common.constant.CommonConstant;
@@ -60,6 +61,12 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
      */
     private static final String SALT = "share_study_platform";
 
+    /**
+     * 教师默认头像
+     */
+    @Value("${tencent.cos.default-avatar}")
+    private String defaultAvatar;
+
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void register(TeacherRegisterVo teacherRegisterVo) {
@@ -84,6 +91,9 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         teacher.setBelong(resultCollege.getId());
         BeanUtils.copyProperties(teacherRegisterVo, teacher);
         teacher.setPassword(DigestUtil.md5Hex(teacher.getPassword() + SALT));
+        if (StringUtils.isEmpty(teacher.getAvatar())) {
+            teacher.setAvatar(defaultAvatar);
+        }
         int insertResult = teacherMapper.insert(teacher);
 
         // 判断数据库插入结果
@@ -122,8 +132,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         TeacherLoginDto teacherLoginDto = new TeacherLoginDto();
         teacherLoginDto.setId(teacher.getId());
         teacherLoginDto.setAccount(teacher.getAccount());
-        String name = DesensitizedUtil.chineseName(teacher.getName());
-        teacherLoginDto.setName(name);
+        teacherLoginDto.setName(teacher.getName());
         teacherLoginDto.setAvatar(teacher.getAvatar());
         teacherLoginDto.setGender(teacher.getGender());
         String collegeName = collegeMapper.selectById(teacher.getBelong()).getName();
@@ -172,8 +181,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         TeacherLoginDto teacherLoginDto = new TeacherLoginDto();
         teacherLoginDto.setId(teacher.getId());
         teacherLoginDto.setAccount(teacher.getAccount());
-        String name = DesensitizedUtil.chineseName(teacher.getName());
-        teacherLoginDto.setName(name);
+        teacherLoginDto.setName(teacher.getName());
         teacherLoginDto.setAvatar(teacher.getAvatar());
         teacherLoginDto.setGender(teacher.getGender());
         String collegeName = collegeMapper.selectById(teacher.getBelong()).getName();
@@ -233,6 +241,12 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_DOES_NOT_EXIST), "用户后台无数据");
         }
 
+        // 对比密码是否一致
+        String passwordNeedCompare = DigestUtil.md5Hex(adminUpdateSelfVo.getPassword() + SALT);
+        if (!passwordNeedCompare.equals(teacher.getPassword())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PASSWORD_VERIFICATION_FAILED), "密码校验失败");
+        }
+
         // 判断更新内容是否重复
         if (Objects.equals(adminUpdateSelfVo.getAccount(), teacher.getAccount())
                 && Objects.equals(adminUpdateSelfVo.getGender(), teacher.getGender())
@@ -251,12 +265,6 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             if (exist != null) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.USERNAME_ALREADY_EXISTS));
             }
-        }
-
-        // 对比密码是否一致
-        String passwordNeedCompare = DigestUtil.md5Hex(adminUpdateSelfVo.getPassword() + SALT);
-        if (!passwordNeedCompare.equals(teacher.getPassword())) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.PASSWORD_VERIFICATION_FAILED), "密码校验失败");
         }
 
         // 补全数据
@@ -751,7 +759,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void updateUserSelf(UserUpdateInfoSelfVo userUpdateInfoSelfVo, HttpServletRequest request) {
         // 鉴定操作者的权限
-        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
         if (Objects.isNull(teacherLoginDto)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "用户未登录");
         }
@@ -763,6 +771,12 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         Teacher teacher = teacherMapper.selectById(userUpdateInfoSelfVo.getId());
         if (teacher == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_DOES_NOT_EXIST), "用户后台无数据");
+        }
+
+        // 对比密码是否一致
+        String passwordNeedCompare = DigestUtil.md5Hex(userUpdateInfoSelfVo.getPassword() + SALT);
+        if (!passwordNeedCompare.equals(teacher.getPassword())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PASSWORD_VERIFICATION_FAILED), "密码校验失败");
         }
 
         // 判断更新内容是否重复
@@ -783,12 +797,6 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             if (exist != null) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.USERNAME_ALREADY_EXISTS));
             }
-        }
-
-        // 对比密码是否一致
-        String passwordNeedCompare = DigestUtil.md5Hex(userUpdateInfoSelfVo.getPassword() + SALT);
-        if (!passwordNeedCompare.equals(teacher.getPassword())) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.PASSWORD_VERIFICATION_FAILED), "密码校验失败");
         }
 
         // 补全数据

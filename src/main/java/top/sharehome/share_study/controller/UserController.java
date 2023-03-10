@@ -222,9 +222,7 @@ public class UserController {
         }
 
         if (ObjectUtils.isEmpty(userResourceUpdateVo.getId())
-                || StringUtils.isEmpty(userResourceUpdateVo.getInfo())
-                || StringUtils.isEmpty(userResourceUpdateVo.getUrl())
-                || StringUtils.isEmpty(userResourceUpdateVo.getName())) {
+                || StringUtils.isAnyEmpty(userResourceUpdateVo.getUrl(), userResourceUpdateVo.getName())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }
 
@@ -309,10 +307,10 @@ public class UserController {
     /**
      * 普通用户的收藏分页
      *
-     * @param id       普通用户的ID
-     * @param current  当前页
-     * @param pageSize 页面条数
-     * @param request  获取操作者的登录状态
+     * @param id                普通用户的ID
+     * @param current           当前页
+     * @param pageSize          页面条数
+     * @param request           获取操作者的登录状态
      * @param userCollectPageVo 分页模糊查询
      * @return 返回分页结果
      */

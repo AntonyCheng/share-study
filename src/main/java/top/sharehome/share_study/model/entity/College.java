@@ -7,6 +7,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import top.sharehome.share_study.common.converter.ExcelIntegerConverter;
 import top.sharehome.share_study.common.converter.ExcelLocalDateTimeConverter;
 import top.sharehome.share_study.common.converter.ExcelLongConverter;
 
@@ -71,7 +72,7 @@ public class College implements Serializable {
     @TableField(value = "is_deleted", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "逻辑删除（0表示未删除，1表示已删除）")
     @TableLogic
-    @ExcelProperty(value = "逻辑删除（0表示未删除，1表示已删除）", index = 5)
+    @ExcelProperty(value = "逻辑删除（0表示未删除，1表示已删除）", index = 5, converter = ExcelIntegerConverter.class)
     private Integer isDeleted;
 
     public static final String COL_COLLEGE_ID = "college_id";

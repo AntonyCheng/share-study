@@ -82,11 +82,8 @@ public class PostController {
     @ApiOperation("发布帖子接口")
     public R<String> add(@ApiParam(name = "postAddVo", value = "帖子添加Vo", required = true) @RequestBody PostAddVo postAddVo, HttpServletRequest request) {
         // 判空
-        if (postAddVo == null || StringUtils.isAnyEmpty(
-                postAddVo.getName(),
-                postAddVo.getInfo(),
-                postAddVo.getUrl()
-        )) {
+        if (postAddVo == null
+                || StringUtils.isAnyEmpty(postAddVo.getName(), postAddVo.getUrl())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }
 

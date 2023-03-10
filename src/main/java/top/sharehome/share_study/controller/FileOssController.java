@@ -121,6 +121,9 @@ public class FileOssController {
         if (ossUrl == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }
+        if (!ossUrl.contains("myqcloud.com")) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH));
+        }
         fileOssService.delete(ossUrl);
         return R.success("OSS文件删除成功");
     }

@@ -235,7 +235,7 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
             teacherLambdaUpdateWrapper
                     .eq(Teacher::getId, postCollectUpdateVo.getBelong())
                     .set(collect.getStatus() == 0, Teacher::getScore, teacherMapper.selectById(postCollectUpdateVo.getBelong()).getScore() - 1)
-                    .set(collect.getStatus() == 1, Teacher::getScore, resourceMapper.selectById(postCollectUpdateVo.getBelong()).getScore() + 1);
+                    .set(collect.getStatus() == 1, Teacher::getScore, teacherMapper.selectById(postCollectUpdateVo.getBelong()).getScore() + 1);
             int updateTeacherResult = teacherMapper.update(null, teacherLambdaUpdateWrapper);
             if (updateTeacherResult == 0) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "教师数据更新失败，从数据库返回的影响行数为0，且在之前没有报出异常");
@@ -266,7 +266,7 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
             LambdaUpdateWrapper<Teacher> teacherLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
             teacherLambdaUpdateWrapper
                     .eq(Teacher::getId, postCollectUpdateVo.getBelong())
-                    .set(Teacher::getScore, teacherMapper.selectById(postCollectUpdateVo.getBelong()).getScore() - 1);
+                    .set(Teacher::getScore, teacherMapper.selectById(postCollectUpdateVo.getBelong()).getScore() + 1);
             int updateTeacherResult = teacherMapper.update(null, teacherLambdaUpdateWrapper);
             if (updateTeacherResult == 0) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "教师数据更新失败，从数据库返回的影响行数为0，且在之前没有报出异常");

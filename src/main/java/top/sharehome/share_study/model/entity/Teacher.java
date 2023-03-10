@@ -7,6 +7,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import top.sharehome.share_study.common.converter.ExcelIntegerConverter;
 import top.sharehome.share_study.common.converter.ExcelLocalDateTimeConverter;
 import top.sharehome.share_study.common.converter.ExcelLongConverter;
 
@@ -70,7 +71,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_gender")
     @ApiModelProperty(value = "教师性别（0表示男性，1表示女性）")
-    @ExcelProperty(value = "教师性别", index = 5)
+    @ExcelProperty(value = "教师性别", index = 5, converter = ExcelIntegerConverter.class)
     private Integer gender;
 
     /**
@@ -94,7 +95,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_score")
     @ApiModelProperty(value = "教师创作贡献度")
-    @ExcelProperty(value = "教师创作贡献度", index = 8, converter = ExcelLongConverter.class)
+    @ExcelProperty(value = "教师创作贡献度", index = 8, converter = ExcelIntegerConverter.class)
     private Integer score;
 
     /**
@@ -102,7 +103,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_message_total")
     @ApiModelProperty(value = "消息总数")
-    @ExcelProperty(value = "消息总数", index = 9, converter = ExcelLongConverter.class)
+    @ExcelProperty(value = "消息总数", index = 9, converter = ExcelIntegerConverter.class)
     private Integer messageTotal;
 
     /**
@@ -110,7 +111,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_message_read")
     @ApiModelProperty(value = "消息已读数")
-    @ExcelProperty(value = "消息已读数", index = 10, converter = ExcelLongConverter.class)
+    @ExcelProperty(value = "消息已读数", index = 10, converter = ExcelIntegerConverter.class)
     private Integer messageRead;
 
     /**
@@ -118,7 +119,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_status", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "教师状态（0表示正常，1表示封禁）")
-    @ExcelProperty(value = "教师状态", index = 11)
+    @ExcelProperty(value = "教师状态", index = 11, converter = ExcelIntegerConverter.class)
     private Integer status;
 
     /**
@@ -126,7 +127,7 @@ public class Teacher implements Serializable {
      */
     @TableField(value = "teacher_role", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "用户角色（0普通用户，1管理员用户，2超级管理员）")
-    @ExcelProperty(value = "用户角色", index = 12)
+    @ExcelProperty(value = "用户角色", index = 12, converter = ExcelIntegerConverter.class)
     private Integer role;
 
     /**
@@ -151,7 +152,7 @@ public class Teacher implements Serializable {
     @TableField(value = "is_deleted", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "逻辑删除（0表示未删除，1表示已删除）")
     @TableLogic
-    @ExcelProperty(value = "逻辑删除", index = 15)
+    @ExcelProperty(value = "逻辑删除", index = 15, converter = ExcelIntegerConverter.class)
     private Integer isDeleted;
 
     public static final String COL_TEACHER_ID = "teacher_id";

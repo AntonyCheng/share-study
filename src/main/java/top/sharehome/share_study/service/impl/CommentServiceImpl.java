@@ -429,6 +429,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         if (teacherLoginDto == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
         }
+        if (!Objects.equals(commentMapper.selectById(id).getBelong(), teacherLoginDto.getId())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED));
+        }
         Comment resultFromDatabase = commentMapper.selectById(id);
         if (!Objects.equals(teacherLoginDto.getId(), resultFromDatabase.getSend())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "普通用户不能删除其他用户收到的信息");
@@ -460,14 +463,17 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
         LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
         commentLambdaQueryWrapper.eq(Comment::getSend, teacherLoginDto.getId());
-        List<Comment> comments = commentMapper.selectList(commentLambdaQueryWrapper);
+        Long selectCount = commentMapper.selectCount(commentLambdaQueryWrapper);
 
-        if (comments.isEmpty()) {
+        if (selectCount == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "该用户没有任何消息");
         }
 
-        List<Long> commentIdList = comments.stream().map(Comment::getId).collect(Collectors.toList());
-        int updateResult = commentMapper.deleteBatchIds(commentIdList);
+        LambdaUpdateWrapper<Comment> commentLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        commentLambdaUpdateWrapper
+                .eq(Comment::getSend, teacherLoginDto.getId())
+                .set(Comment::getReadStatus, 2);
+        int updateResult = commentMapper.update(null, commentLambdaUpdateWrapper);
 
         // 判断数据库插入结果
         if (updateResult == 0) {
@@ -546,6 +552,21 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         if (teacherLoginDto == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
         }
+
+        if (Objects.equals(postCommentAddDto.getSend(), teacherLoginDto.getId())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED));
+        }
+
+        Teacher teacher = teacherMapper.selectById(postCommentAddDto.getSend());
+        if (Objects.isNull(teacher)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS));
+        }
+
+        LambdaUpdateWrapper<Teacher> teacherLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        teacherLambdaUpdateWrapper
+                .set(Teacher::getMessageTotal, teacher.getMessageTotal() + 1)
+                .eq(Teacher::getId, postCommentAddDto.getSend());
+        teacherMapper.update(null, teacherLambdaUpdateWrapper);
 
         Comment comment = new Comment();
         comment.setBelong(teacherLoginDto.getId());
