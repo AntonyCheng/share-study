@@ -127,7 +127,9 @@ public class Comment implements Serializable {
 
     public static final String COL_COMMENT_CONTENT = "comment_content";
 
-    public static final String COL_COMMENT_READ = "comment_read";
+    public static final String COL_COMMENT_URL = "comment_url";
+
+    public static final String COL_COMMENT_READ_STATUS = "comment_read_status";
 
     public static final String COL_COMMENT_STATUS = "comment_status";
 

@@ -15,7 +15,7 @@ import com.alibaba.excel.metadata.property.ExcelContentProperty;
 public class ExcelLongConverter implements Converter<Long> {
 
     @Override
-    public Class supportJavaTypeKey() {
+    public Class<Long> supportJavaTypeKey() {
         return null;
     }
 

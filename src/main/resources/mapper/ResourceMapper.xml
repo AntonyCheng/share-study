@@ -9,6 +9,7 @@
         <result column="resource_name" jdbcType="VARCHAR" property="name"/>
         <result column="resource_info" jdbcType="VARCHAR" property="info"/>
         <result column="resource_url" jdbcType="VARCHAR" property="url"/>
+        <result column="resource_score" jdbcType="BIGINT" property="score"/>
         <result column="resource_status" jdbcType="TINYINT" property="status"/>
         <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
         <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
@@ -21,6 +22,7 @@
         resource_name,
         resource_info,
         resource_url,
+        resource_score,
         resource_status,
         create_time,
         update_time,

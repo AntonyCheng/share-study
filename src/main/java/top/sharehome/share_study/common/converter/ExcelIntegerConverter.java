@@ -5,7 +5,6 @@ import com.alibaba.excel.enums.CellDataTypeEnum;
 import com.alibaba.excel.metadata.CellData;
 import com.alibaba.excel.metadata.GlobalConfiguration;
 import com.alibaba.excel.metadata.property.ExcelContentProperty;
-import io.swagger.models.auth.In;
 
 /**
  * EasyExcel Integer转换类
@@ -16,7 +15,7 @@ import io.swagger.models.auth.In;
 public class ExcelIntegerConverter implements Converter<Integer> {
 
     @Override
-    public Class supportJavaTypeKey() {
+    public Class<Integer> supportJavaTypeKey() {
         return null;
     }
 

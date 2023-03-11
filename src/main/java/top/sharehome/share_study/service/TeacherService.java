@@ -171,7 +171,7 @@ public interface TeacherService extends IService<Teacher> {
      * 普通用户修改自己信息接口（s/a/u）
      *
      * @param userUpdateInfoSelfVo 普通用户更新自己信息Vo实体
-     * @param request          获取Session中的登录状态
+     * @param request              获取Session中的登录状态
      */
     void updateUserSelf(UserUpdateInfoSelfVo userUpdateInfoSelfVo, HttpServletRequest request);
 }

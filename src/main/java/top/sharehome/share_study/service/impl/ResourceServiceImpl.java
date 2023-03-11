@@ -508,7 +508,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "用户未登录");
         }
         Resource resultFromDatabase = resourceMapper.selectById(userResourceUpdateVo.getId());
-        if (Objects.isNull(resultFromDatabase)){
+        if (Objects.isNull(resultFromDatabase)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.RESOURCE_NOT_EXISTS), "教学资料不存在，不需要进行下一步操作");
         }
         if (!Objects.equals(teacherLoginDto.getId(), resultFromDatabase.getBelong())) {

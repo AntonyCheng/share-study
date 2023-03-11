@@ -15,7 +15,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public class RedisConfig extends CachingConfigurerSupport {
     @Bean
     public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<Object, Object> redisTemplate = new RedisTemplate<Object, Object>();
+        RedisTemplate<Object, Object> redisTemplate = new RedisTemplate<>();
         // 没有改变序列化之前的序列化规则是JdkSerializationRedisSerializer();
         // 这里只写键的序列化即可，当程序获取时会将其进行对应的反序列化;
         redisTemplate.setKeySerializer(new StringRedisSerializer());

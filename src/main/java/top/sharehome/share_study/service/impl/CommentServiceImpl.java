@@ -600,4 +600,41 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "删除交流评论失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
+    public void updateCommentRead(Long id, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
+        }
+
+        Comment comment = commentMapper.selectById(id);
+        if (Objects.isNull(comment)) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.COMMENT_NOT_EXISTS));
+        }
+        if (!Objects.equals(comment.getBelong(), teacherLoginDto.getId())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED));
+        }
+
+        LambdaUpdateWrapper<Comment> commentLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        commentLambdaUpdateWrapper
+                .set(Comment::getReadStatus, 1)
+                .eq(Comment::getId, id);
+        int commentUpdateResult = commentMapper.update(null, commentLambdaUpdateWrapper);
+
+        if (commentUpdateResult == 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "修改私信状态失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+        }
+
+        LambdaUpdateWrapper<Teacher> teacherLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        teacherLambdaUpdateWrapper
+                .set(Teacher::getMessageRead, teacherMapper.selectById(teacherLoginDto.getId()).getMessageRead() + 1)
+                .eq(Teacher::getId, teacherLoginDto.getId());
+        int teacherUpdateResult = teacherMapper.update(null, teacherLambdaUpdateWrapper);
+        
+        if (teacherUpdateResult == 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "修改教师已读数量失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+        }
+    }
 }

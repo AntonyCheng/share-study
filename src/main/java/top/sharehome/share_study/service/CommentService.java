@@ -123,4 +123,13 @@ public interface CommentService extends IService<Comment> {
      * @param request 获取Session中登录状态
      */
     void deleteComment(Long id, HttpServletRequest request);
+
+    /**
+     * 用户修改消息是否已读
+     *
+     * @param id      评论ID
+     * @param request 获取用户状态
+     * @return 返回修改结果
+     */
+    void updateCommentRead(Long id, HttpServletRequest request);
 }

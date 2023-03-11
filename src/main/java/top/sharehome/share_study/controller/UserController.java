@@ -275,6 +275,23 @@ public class UserController {
     }
 
     /**
+     * 用户修改消息是否已读
+     *
+     * @param id      评论ID
+     * @param request 获取用户状态
+     * @return 返回修改结果
+     */
+    @PutMapping("/comment/update/read/{id}")
+    @ApiOperation("用户修改消息是否已读")
+    public R<String> updateCommentRead(@PathVariable("id") Long id, HttpServletRequest request) {
+        if (id == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "操作者id为空，操作失败");
+        }
+        commentService.updateCommentRead(id, request);
+        return R.success("消息已读");
+    }
+
+    /**
      * 普通用户删除单条评论
      *
      * @param id      评论交流的ID
@@ -316,7 +333,9 @@ public class UserController {
      */
     @GetMapping("/collect/page/{id}/{current}/{pageSize}")
     @ApiOperation("普通用户的收藏分页")
-    public R<Page<UserCollectPageDto>> getCollectPage(@PathVariable("id") Long id, @PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, HttpServletRequest request, @RequestBody(required = false) UserCollectPageVo userCollectPageVo) {
+    public R<Page<UserCollectPageDto>> getCollectPage(@PathVariable("id") Long id, @PathVariable("current") Integer
+            current, @PathVariable("pageSize") Integer pageSize, HttpServletRequest
+                                                              request, @RequestBody(required = false) UserCollectPageVo userCollectPageVo) {
         if (id == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "操作者id为空，操作失败");
         }

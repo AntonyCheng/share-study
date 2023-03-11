@@ -11,8 +11,8 @@
         <result column="teacher_avatar" jdbcType="VARCHAR" property="avatar"/>
         <result column="teacher_gender" jdbcType="TINYINT" property="gender"/>
         <result column="teacher_belong" jdbcType="BIGINT" property="belong"/>
-        <result column="teacher_score" jdbcType="BIGINT" property="score"/>
         <result column="teacher_email" jdbcType="VARCHAR" property="email"/>
+        <result column="teacher_score" jdbcType="BIGINT" property="score"/>
         <result column="teacher_message_total" jdbcType="BIGINT" property="messageTotal"/>
         <result column="teacher_message_read" jdbcType="BIGINT" property="messageRead"/>
         <result column="teacher_status" jdbcType="TINYINT" property="status"/>
@@ -30,8 +30,8 @@
         teacher_avatar,
         teacher_gender,
         teacher_belong,
-        teacher_score,
         teacher_email,
+        teacher_score,
         teacher_message_total,
         teacher_message_read,
         teacher_status,

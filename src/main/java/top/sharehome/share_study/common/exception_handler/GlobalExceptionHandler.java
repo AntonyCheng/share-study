@@ -1,6 +1,7 @@
 package top.sharehome.share_study.common.exception_handler;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -32,8 +33,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public R globalExceptionHandler(Exception exception) {
         exception.printStackTrace();
-        String message = exception.getMessage();
-        Class<? extends Exception> aClass = exception.getClass();
         log.warn("GlobalExceptionHandler:{},Description:{}", exception.getClass(), UNKNOWN_EXCEPTION_MESSAGE);
         return R.failure(RCodeEnum.SYSTEM_UNKNOWN_EXCEPTION);
     }
@@ -46,11 +45,15 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public R methodArgumentTypeMismatchException(MethodArgumentTypeMismatchException exception) {
-        if (exception.getMessage().contains("Failed to convert value of type")
-                && exception.getMessage().contains("to required type")
-                && exception.getMessage().contains("nested exception is")) {
+        String message = exception.getMessage();
+        if (StringUtils.isEmpty(message)) {
+            return globalExceptionHandler(exception);
+        }
+        if (message.contains("Failed to convert value of type")
+                && message.contains("to required type")
+                && message.contains("nested exception is")) {
             exception.printStackTrace();
-            log.warn("MethodArgumentTypeMismatchException:{},Description:{}", exception.getClass(), exception.getMessage());
+            log.warn("MethodArgumentTypeMismatchException:{},Description:{}", exception.getClass(), message);
             return R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH);
         }
         return globalExceptionHandler(exception);
@@ -64,9 +67,13 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public R httpMessageNotReadableExceptionHandler(HttpMessageNotReadableException exception) {
-        if (exception.getMessage().contains("Required request body is missing:")) {
+        String message = exception.getMessage();
+        if (StringUtils.isEmpty(message)) {
+            return globalExceptionHandler(exception);
+        }
+        if (message.contains("Required request body is missing:")) {
             exception.printStackTrace();
-            log.warn("HttpMessageNotReadableException:{},Description:{}", exception.getMessage(), exception.getMessage());
+            log.warn("HttpMessageNotReadableException:{},Description:{}", message, message);
             return R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY);
         }
         return globalExceptionHandler(exception);
