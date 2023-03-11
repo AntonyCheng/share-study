@@ -51,3 +51,4 @@ tencent:
       secret-id:
       secret-key:
       bucket-name:
+    default-avatar:
