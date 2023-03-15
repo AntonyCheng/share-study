@@ -36,7 +36,8 @@ public class FileOssController {
     private static final List<String> FILE_FORMATS = new ArrayList<>(Arrays.asList(
             "png", "jpg", "jpeg", "pdf",
             "xlsx", "xls", "doc", "docx",
-            "ppt", "pptx", "mp3", "mp4"));
+            "ppt", "pptx", "mp3", "mp4", "mpeg",
+            "zip", "rar", "7z", "gif"));
 
     /**
      * 头像文件上传（无需权限）
@@ -90,18 +91,18 @@ public class FileOssController {
             throw new CustomizeReturnException(R.failure(RCodeEnum.USER_UPLOADED_FILE_TYPE_MISMATCH));
         }
         long size = file.getSize();
-        if (Arrays.asList("png", "jpg", "jpeg").contains(suffix)) {
-            if (size / 1024 >= 500) {
+        if (Arrays.asList("png", "jpg", "jpeg", "gif").contains(suffix)) {
+            if (size / 1024 / 1024 >= 5) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.USER_UPLOADED_IMAGE_IS_TOO_LARGE));
             }
         }
         if (Arrays.asList("pdf", "xlsx", "xls", "doc", "docx", "ppt", "pptx").contains(suffix)) {
-            if (size / 1024 / 1024 >= 5) {
+            if (size / 1024 / 1024 >= 20) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.USER_UPLOADED_FILE_IS_TOO_LARGE));
             }
         }
-        if (Arrays.asList("mp3", "mp4").contains(suffix)) {
-            if (size / 1024 / 1024 >= 50) {
+        if (Arrays.asList("mp3", "mp4", "zip", "rar", "7z").contains(suffix)) {
+            if (size / 1024 / 1024 >= 200) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.USER_UPLOADED_VIDEO_IS_TOO_LARGE));
             }
         }

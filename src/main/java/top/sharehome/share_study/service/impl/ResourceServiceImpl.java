@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.hyperledger.fabric.client.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,12 +17,14 @@ import top.sharehome.share_study.common.exception_handler.customize.CustomizeRet
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeTransactionException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
+import top.sharehome.share_study.config.FabricGatewayConfig;
 import top.sharehome.share_study.mapper.*;
 import top.sharehome.share_study.model.dto.*;
 import top.sharehome.share_study.model.entity.*;
 import top.sharehome.share_study.model.vo.*;
 import top.sharehome.share_study.service.FileOssService;
 import top.sharehome.share_study.service.ResourceService;
+import top.sharehome.share_study.utils.FabricGatewayUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -32,6 +35,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import static org.apache.tomcat.util.codec.binary.StringUtils.newStringUtf8;
 
 /**
  * 教学资料ServiceImpl
@@ -58,6 +63,9 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     @javax.annotation.Resource
     private CollectMapper collectMapper;
 
+    @javax.annotation.Resource
+    FabricGatewayUtil fabricGatewayUtil;
+
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void download(HttpServletResponse response) {
@@ -70,9 +78,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
             // 查询教学资料分类表所有的数据
             List<Resource> resourceList = resourceMapper.selectList(null);
-            EasyExcelFactory.write(response.getOutputStream(), Resource.class)
-                    .sheet("教学资料数据")
-                    .doWrite(resourceList);
+            EasyExcelFactory.write(response.getOutputStream(), Resource.class).sheet("教学资料数据").doWrite(resourceList);
         } catch (UnsupportedEncodingException e) {
             throw new CustomizeFileException(R.failure(RCodeEnum.EXCEL_EXPORT_FAILED), "导出Excel时文件编码异常");
         } catch (IOException e) {
@@ -101,9 +107,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "发表该教学资料的老师不存在");
         }
 
-        if (!Objects.equals(targetTeacher.getId(), teacherLoginDto.getId())
-                && (Objects.equals(teacherLoginDto.getRole(), CommonConstant.ADMIN_ROLE)
-                && !Objects.equals(targetTeacher.getRole(), CommonConstant.DEFAULT_ROLE))) {
+        if (!Objects.equals(targetTeacher.getId(), teacherLoginDto.getId()) && (Objects.equals(teacherLoginDto.getRole(), CommonConstant.ADMIN_ROLE) && !Objects.equals(targetTeacher.getRole(), CommonConstant.DEFAULT_ROLE))) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "管理员没有权限在此删除其他管理员和超级管理员的教学资料");
         }
 
@@ -122,6 +126,10 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         }
 
         fileOssService.delete(selectResult.getUrl());
+
+        //删除链操作
+
+
     }
 
     @Override
@@ -143,9 +151,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
                 throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "发表该教学资料的老师不存在");
             }
 
-            if (!Objects.equals(targetTeacher.getId(), teacherLoginDto.getId())
-                    && (Objects.equals(teacherLoginDto.getRole(), CommonConstant.ADMIN_ROLE)
-                    && !Objects.equals(targetTeacher.getRole(), CommonConstant.DEFAULT_ROLE))) {
+            if (!Objects.equals(targetTeacher.getId(), teacherLoginDto.getId()) && (Objects.equals(teacherLoginDto.getRole(), CommonConstant.ADMIN_ROLE) && !Objects.equals(targetTeacher.getRole(), CommonConstant.DEFAULT_ROLE))) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "管理员没有权限在此删除其他管理员和超级管理员的教学资料");
             }
 
@@ -193,9 +199,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "发表该教学资料的老师不存在");
         }
 
-        if (!Objects.equals(targetTeacher.getId(), teacherLoginDto.getId())
-                && (Objects.equals(teacherLoginDto.getRole(), CommonConstant.ADMIN_ROLE)
-                && !Objects.equals(targetTeacher.getRole(), CommonConstant.DEFAULT_ROLE))) {
+        if (!Objects.equals(targetTeacher.getId(), teacherLoginDto.getId()) && (Objects.equals(teacherLoginDto.getRole(), CommonConstant.ADMIN_ROLE) && !Objects.equals(targetTeacher.getRole(), CommonConstant.DEFAULT_ROLE))) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "管理员没有权限在此回显其他管理员和超级管理员的教学资料");
         }
 
@@ -227,9 +231,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "发表该教学资料的老师不存在");
         }
 
-        if (!Objects.equals(targetTeacher.getId(), teacherLoginDto.getId())
-                && (Objects.equals(teacherLoginDto.getRole(), CommonConstant.ADMIN_ROLE)
-                && !Objects.equals(targetTeacher.getRole(), CommonConstant.DEFAULT_ROLE))) {
+        if (!Objects.equals(targetTeacher.getId(), teacherLoginDto.getId()) && (Objects.equals(teacherLoginDto.getRole(), CommonConstant.ADMIN_ROLE) && !Objects.equals(targetTeacher.getRole(), CommonConstant.DEFAULT_ROLE))) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "管理员没有权限在此修改其他管理员和超级管理员的教学资料");
         }
 
@@ -241,6 +243,40 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         if (updateResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "修改教学资料失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
+
+        //管理员修改链//////////////////////////////////////////////////////////////////
+        if(teacherLoginDto.getRole()==1){
+            try {
+                Contract contract = fabricGatewayUtil.getContract();
+                String operateName = "管理员:" + teacherLoginDto.getName() + "(ID=" + teacherLoginDto.getId() + ")" + "执行修改资料操作";
+                contract.newProposal("updateResource")
+                        .addArguments(String.valueOf(resultFromDatabase.getId()), operateName, String.valueOf(resultFromDatabase.getBelong()),
+                                resultFromDatabase.getName(), resultFromDatabase.getInfo(), resultFromDatabase.getUrl(), String.valueOf(resultFromDatabase.getScore()), String.valueOf(resultFromDatabase.getStatus()),
+                                String.valueOf(resultFromDatabase.getCreateTime()), String.valueOf(resultFromDatabase.getUpdateTime()), String.valueOf(resultFromDatabase.getIsDeleted()))
+                        .build()
+                        .endorse()
+                        .submitAsync();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (teacherLoginDto.getRole()==2){
+            try {
+                Contract contract = fabricGatewayUtil.getContract();
+                String operateName = "超级管理员:" + teacherLoginDto.getName() + "(ID=" + teacherLoginDto.getId() + ")" + "执行修改资料操作";
+                contract.newProposal("updateResource")
+                        .addArguments(String.valueOf(resultFromDatabase.getId()), operateName, String.valueOf(resultFromDatabase.getBelong()),
+                                resultFromDatabase.getName(), resultFromDatabase.getInfo(), resultFromDatabase.getUrl(), String.valueOf(resultFromDatabase.getScore()), String.valueOf(resultFromDatabase.getStatus()),
+                                String.valueOf(resultFromDatabase.getCreateTime()), String.valueOf(resultFromDatabase.getUpdateTime()), String.valueOf(resultFromDatabase.getIsDeleted()))
+                        .build()
+                        .endorse()
+                        .submitAsync();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
     }
 
     @Override
@@ -249,8 +285,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         Page<Resource> page = new Page<>(current, pageSize);
         Page<ResourcePageDto> returnResult = new Page<>(current, pageSize);
         LambdaQueryWrapper<Resource> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper
-                .orderByAsc(Resource::getCreateTime);
+        lambdaQueryWrapper.orderByAsc(Resource::getCreateTime);
         if (resourcePageVo == null) {
             this.page(page, lambdaQueryWrapper);
             BeanUtils.copyProperties(page, returnResult, "records");
@@ -270,10 +305,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             return returnResult;
         }
 
-        lambdaQueryWrapper
-                .like(!StringUtils.isEmpty(resourcePageVo.getInfo()), Resource::getInfo, resourcePageVo.getInfo())
-                .like(!StringUtils.isEmpty(resourcePageVo.getName()), Resource::getName, resourcePageVo.getName())
-                .like(!ObjectUtils.isEmpty(resourcePageVo.getStatus()), Resource::getStatus, resourcePageVo.getStatus());
+        lambdaQueryWrapper.like(!StringUtils.isEmpty(resourcePageVo.getInfo()), Resource::getInfo, resourcePageVo.getInfo()).like(!StringUtils.isEmpty(resourcePageVo.getName()), Resource::getName, resourcePageVo.getName()).like(!ObjectUtils.isEmpty(resourcePageVo.getStatus()), Resource::getStatus, resourcePageVo.getStatus());
         this.page(page, lambdaQueryWrapper);
         BeanUtils.copyProperties(page, returnResult, "records");
 
@@ -322,9 +354,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         Page<Resource> page = new Page<>(current, pageSize);
         Page<PostPageDto> returnResult = new Page<>(current, pageSize);
         LambdaQueryWrapper<Resource> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper
-                .eq(Resource::getBelong, id)
-                .orderByAsc(Resource::getCreateTime);
+        lambdaQueryWrapper.eq(Resource::getBelong, id).orderByAsc(Resource::getCreateTime);
 
         if (userResourcePageVo == null) {
             this.page(page, lambdaQueryWrapper);
@@ -376,9 +406,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             return returnResult;
         }
 
-        lambdaQueryWrapper
-                .like(!StringUtils.isEmpty(userResourcePageVo.getResourceName()), Resource::getName, userResourcePageVo.getResourceName())
-                .like(!StringUtils.isEmpty(userResourcePageVo.getResourceInfo()), Resource::getInfo, userResourcePageVo.getResourceInfo());
+        lambdaQueryWrapper.like(!StringUtils.isEmpty(userResourcePageVo.getResourceName()), Resource::getName, userResourcePageVo.getResourceName()).like(!StringUtils.isEmpty(userResourcePageVo.getResourceInfo()), Resource::getInfo, userResourcePageVo.getResourceInfo());
 
         this.page(page, lambdaQueryWrapper);
         BeanUtils.copyProperties(page, returnResult, "records");
@@ -445,9 +473,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "发表该教学资料的老师不存在");
         }
 
-        if (!Objects.equals(targetTeacher.getId(), teacherLoginDto.getId())
-                && (Objects.equals(teacherLoginDto.getRole(), CommonConstant.ADMIN_ROLE)
-                && !Objects.equals(targetTeacher.getRole(), CommonConstant.DEFAULT_ROLE))) {
+        if (!Objects.equals(targetTeacher.getId(), teacherLoginDto.getId()) && (Objects.equals(teacherLoginDto.getRole(), CommonConstant.ADMIN_ROLE) && !Objects.equals(targetTeacher.getRole(), CommonConstant.DEFAULT_ROLE))) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "管理员没有权限在此删除其他管理员和超级管理员的教学资料");
         }
 
@@ -462,6 +488,14 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         }
 
         fileOssService.delete(selectResult.getUrl());
+//待定。
+        //用户自己删除链操作//////////////////////////////////////////////////////////////////////
+//        try {
+//            Contract contract = fabricUtil.getContract();
+//            contract.submitTransaction("deleteResource", String.valueOf(id));
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
     }
 
     @Override
@@ -515,9 +549,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "任何用户都无法在个人信息页面获取其他用户的教学资料信息");
         }
 
-        if (Objects.equals(userResourceUpdateVo.getName(), resultFromDatabase.getName())
-                && Objects.equals(userResourceUpdateVo.getInfo(), resultFromDatabase.getInfo())
-                && Objects.equals(userResourceUpdateVo.getUrl(), resultFromDatabase.getUrl())) {
+        if (Objects.equals(userResourceUpdateVo.getName(), resultFromDatabase.getName()) && Objects.equals(userResourceUpdateVo.getInfo(), resultFromDatabase.getInfo()) && Objects.equals(userResourceUpdateVo.getUrl(), resultFromDatabase.getUrl())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.THE_UPDATE_DATA_IS_THE_SAME_AS_THE_BACKGROUND_DATA), "更新数据和库中数据相同");
         }
 
@@ -540,6 +572,21 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         if (updateResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "修改教学资料失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
+
+        //修改链操作///////////////////////////////////////////////////////////
+        try {
+            Contract contract = fabricGatewayUtil.getContract();
+            String operateName = "普通用户:" + teacherLoginDto.getName() + "(ID=" + teacherLoginDto.getId() + ")" + "执行修改资料操作";
+            contract.newProposal("updateResource")
+                    .addArguments(String.valueOf(resultFromDatabase.getId()), operateName, String.valueOf(resultFromDatabase.getBelong()),
+                            resultFromDatabase.getName(), resultFromDatabase.getInfo(), resultFromDatabase.getUrl(), String.valueOf(resultFromDatabase.getScore()), String.valueOf(resultFromDatabase.getStatus()),
+                            String.valueOf(resultFromDatabase.getCreateTime()), String.valueOf(resultFromDatabase.getUpdateTime()), String.valueOf(resultFromDatabase.getIsDeleted()))
+                    .build()
+                    .endorse()
+                    .submitAsync();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -552,8 +599,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         Page<Resource> page = new Page<>(current, pageSize);
         Page<PostPageDto> returnResult = new Page<>(current, pageSize);
         LambdaQueryWrapper<Resource> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper
-                .orderByAsc(Resource::getCreateTime);
+        lambdaQueryWrapper.orderByDesc(Resource::getCreateTime);
 
         if (postPageVo == null) {
             this.page(page, lambdaQueryWrapper);
@@ -603,9 +649,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             return returnResult;
         }
 
-        lambdaQueryWrapper
-                .like(!StringUtils.isEmpty(postPageVo.getName()), Resource::getName, postPageVo.getName())
-                .like(!StringUtils.isEmpty(postPageVo.getInfo()), Resource::getInfo, postPageVo.getInfo());
+        lambdaQueryWrapper.like(!StringUtils.isEmpty(postPageVo.getName()), Resource::getName, postPageVo.getName()).like(!StringUtils.isEmpty(postPageVo.getInfo()), Resource::getInfo, postPageVo.getInfo());
         this.page(page, lambdaQueryWrapper);
         BeanUtils.copyProperties(page, returnResult, "records");
 
@@ -711,10 +755,23 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         }
 
         LambdaUpdateWrapper<Teacher> teacherLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
-        teacherLambdaUpdateWrapper
-                .set(Teacher::getScore, teacherMapper.selectById(teacherLoginDto.getId()).getScore() + 1)
-                .eq(Teacher::getId, teacherLoginDto.getId());
+        teacherLambdaUpdateWrapper.set(Teacher::getScore, teacherMapper.selectById(teacherLoginDto.getId()).getScore() + 1).eq(Teacher::getId, teacherLoginDto.getId());
         teacherMapper.update(null, teacherLambdaUpdateWrapper);
+
+        //入链操作/////////////////////////////////////////////////////////////////////////////////////
+        try {
+            Contract contract = fabricGatewayUtil.getContract();
+            String operateName = "普通用户:" + teacherLoginDto.getName() + "(ID=" + teacherLoginDto.getId() + ")" + "执行增加资料操作";
+            contract.newProposal("createResource")
+                    .addArguments(String.valueOf(resource.getId()), operateName, String.valueOf(resource.getBelong()),
+                            resource.getName(), resource.getInfo(), resource.getUrl(), String.valueOf(resource.getScore()), String.valueOf(resource.getStatus()),
+                            String.valueOf(resource.getCreateTime()), String.valueOf(resource.getUpdateTime()), String.valueOf(resource.getIsDeleted()))
+                    .build()
+                    .endorse()
+                    .submitAsync();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

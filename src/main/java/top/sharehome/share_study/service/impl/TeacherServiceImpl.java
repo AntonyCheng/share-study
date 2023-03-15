@@ -61,12 +61,6 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
      */
     private static final String SALT = "share_study_platform";
 
-    /**
-     * 教师默认头像
-     */
-    @Value("${tencent.cos.default-avatar}")
-    private String defaultAvatar;
-
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void register(TeacherRegisterVo teacherRegisterVo) {
@@ -92,7 +86,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         BeanUtils.copyProperties(teacherRegisterVo, teacher);
         teacher.setPassword(DigestUtil.md5Hex(teacher.getPassword() + SALT));
         if (StringUtils.isEmpty(teacher.getAvatar())) {
-            teacher.setAvatar(defaultAvatar);
+            teacher.setAvatar("");
         }
         int insertResult = teacherMapper.insert(teacher);
 
