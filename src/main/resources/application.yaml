@@ -1,12 +1,11 @@
 spring:
   application:
     name: share_study
-  # DataSource Config
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost/share_study?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://xxx.xxx.xxx.xxx:23305/share_study?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
     username: root
-    password:
+    password: 123456
   mvc:
     pathmatch:
       matching-strategy: ANT_PATH_MATCHER
@@ -14,22 +13,32 @@ spring:
     multipart:
       max-file-size: 1024MB
       max-request-size: 1024MB
-#  session:
-#    timeout: 86400
-#    store-type: redis
-#  redis:
-#    port: 6379
-#    host: localhost
-#    database: 0
-#    jedis:
-#      pool:
-#        max-wait: 1ms
-#        max-active: 8
-#        max-idle: 8
-#        min-idle: 0
-#  cache:
-#    redis:
-#      time-to-live: 1800000
+  session:
+    timeout: 86400
+    store-type: redis
+  redis:
+    port: 26378
+    host: xxx.xxx.xxx.xxx
+    password: 123456
+    database: 0
+    jedis:
+      pool:
+        max-wait: 10ms
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+  cache:
+    redis:
+      time-to-live: 1800000
+  rabbitmq:
+    host: xxx.xxx.xxx.xxx
+    virtual-host: /
+    username: admin
+    password: admin123456
+    port: 25672
+    publisher-confirm-type: correlated
+    template:
+      mandatory: true
 server:
   port: 8080
   servlet:
@@ -47,17 +56,7 @@ mybatis-plus:
 tencent:
   cos:
     file:
-      region:
-      secret-id:
-      secret-key:
-      bucket-name:
-fabricgateway:
-  certificatePath:
-  privateKeyPath:
-  tlsCertPath:
-  nettyChannelBuilder:
-  overrideAuthority:
-  chainCodeName:
-  contractName:
-  channelName:
-  mspId:
+      region: ap-chengdu
+      secret-id: xxx
+      secret-key: xxx
+      bucket-name: sharestudy-xxx

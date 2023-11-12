@@ -2,10 +2,10 @@ package top.sharehome.share_study.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import top.sharehome.share_study.model.dto.UserCollectPageDto;
+import top.sharehome.share_study.model.dto.user.UserCollectPageDto;
 import top.sharehome.share_study.model.entity.Collect;
-import top.sharehome.share_study.model.vo.PostCollectUpdateVo;
-import top.sharehome.share_study.model.vo.UserCollectPageVo;
+import top.sharehome.share_study.model.vo.post.PostCollectUpdateVo;
+import top.sharehome.share_study.model.vo.user.UserCollectPageVo;
 
 import javax.servlet.http.HttpServletRequest;
 

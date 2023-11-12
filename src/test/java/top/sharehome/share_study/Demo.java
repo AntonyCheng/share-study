@@ -1,17 +1,22 @@
 package top.sharehome.share_study;
 
-import java.util.Arrays;
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
+import org.springframework.data.redis.core.RedisTemplate;
 
-/**
- * @Description
- * @Author:AntonyCheng
- * @CreateTime:2023/2/20 22:00
- */
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 
 public class Demo {
     public static void main(String[] args) {
-        String url = "https://share-study-1306588126.cos.ap-chengdu.myqcloud.com/teacher_avatar/2023/02/20/%E5%A4%B4%E5%83%8F.jpg";
-        String[] split = "dsada".split("a");
-        System.out.println("split = " + Arrays.toString(split));
+        HashMap<Long, String> hashMap = new HashMap<>();
+        hashMap.put(1L, "1");
+        hashMap.put(2L, "2");
+        String jsonStr = JSONUtil.toJsonStr(hashMap);
+        System.out.println(jsonStr);
     }
 }

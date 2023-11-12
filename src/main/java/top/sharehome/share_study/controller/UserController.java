@@ -6,15 +6,22 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.web.bind.annotation.*;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
-import top.sharehome.share_study.model.dto.*;
-import top.sharehome.share_study.model.vo.UserCollectPageVo;
-import top.sharehome.share_study.model.vo.UserResourcePageVo;
-import top.sharehome.share_study.model.vo.UserResourceUpdateVo;
-import top.sharehome.share_study.model.vo.UserUpdateInfoSelfVo;
+import top.sharehome.share_study.model.dto.post.PostPageDto;
+import top.sharehome.share_study.model.dto.teacher.TeacherLoginDto;
+import top.sharehome.share_study.model.dto.user.UserCollectPageDto;
+import top.sharehome.share_study.model.dto.user.UserCommentPageDto;
+import top.sharehome.share_study.model.dto.user.UserGetInfoDto;
+import top.sharehome.share_study.model.dto.user.UserResourceGetDto;
+import top.sharehome.share_study.model.vo.user.UserCollectPageVo;
+import top.sharehome.share_study.model.vo.user.UserResourcePageVo;
+import top.sharehome.share_study.model.vo.user.UserResourceUpdateVo;
+import top.sharehome.share_study.model.vo.user.UserUpdateInfoSelfVo;
 import top.sharehome.share_study.service.CollectService;
 import top.sharehome.share_study.service.CommentService;
 import top.sharehome.share_study.service.ResourceService;
@@ -32,6 +39,7 @@ import javax.servlet.http.HttpServletRequest;
 @RequestMapping("/user")
 @Api(tags = "普通用户相关接口")
 @CrossOrigin
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class UserController {
     @Resource
     private TeacherService teacherService;
@@ -111,7 +119,7 @@ public class UserController {
      * @param request              获取Session中的登录状态
      * @return 返回更新结果
      */
-    @PostMapping("/info/self/update")
+    @PutMapping("/info/self/update")
     @ApiOperation("普通用户修改自己信息接口")
     public R<String> updateInfoSelf(@RequestBody UserUpdateInfoSelfVo userUpdateInfoSelfVo, HttpServletRequest request) {
         // 判空
@@ -170,7 +178,7 @@ public class UserController {
      */
     @GetMapping("/resource/page/{id}/{current}/{pageSize}")
     @ApiOperation("普通用户的教学资料分页")
-    public R<Page<PostPageDto>> getResourcePage(@PathVariable("id") Long id, @PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, HttpServletRequest request, @RequestBody(required = false) UserResourcePageVo userResourcePageVo) {
+    public R<Page<PostPageDto>> getResourcePage(@PathVariable("id") Long id, @PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, HttpServletRequest request, UserResourcePageVo userResourcePageVo) {
         if (id == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "操作者id为空，操作失败");
         }
@@ -222,7 +230,7 @@ public class UserController {
         }
 
         if (ObjectUtils.isEmpty(userResourceUpdateVo.getId())
-                || StringUtils.isAnyEmpty(userResourceUpdateVo.getUrl(), userResourceUpdateVo.getName())) {
+                || StringUtils.isEmpty(userResourceUpdateVo.getName())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }
 
@@ -333,9 +341,7 @@ public class UserController {
      */
     @GetMapping("/collect/page/{id}/{current}/{pageSize}")
     @ApiOperation("普通用户的收藏分页")
-    public R<Page<UserCollectPageDto>> getCollectPage(@PathVariable("id") Long id, @PathVariable("current") Integer
-            current, @PathVariable("pageSize") Integer pageSize, HttpServletRequest
-                                                              request, @RequestBody(required = false) UserCollectPageVo userCollectPageVo) {
+    public R<Page<UserCollectPageDto>> getCollectPage(@PathVariable("id") Long id, @PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, HttpServletRequest request, UserCollectPageVo userCollectPageVo) {
         if (id == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "操作者id为空，操作失败");
         }

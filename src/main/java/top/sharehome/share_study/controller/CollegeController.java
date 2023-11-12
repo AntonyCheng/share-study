@@ -7,20 +7,25 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.web.bind.annotation.*;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
-import top.sharehome.share_study.model.dto.CollegeGetDto;
-import top.sharehome.share_study.model.dto.CollegePageDto;
-import top.sharehome.share_study.model.vo.CollegeAddVo;
-import top.sharehome.share_study.model.vo.CollegePageVo;
-import top.sharehome.share_study.model.vo.CollegeUpdateVo;
+import top.sharehome.share_study.model.dto.college.CollegeGetDto;
+import top.sharehome.share_study.model.dto.college.CollegePageDto;
+import top.sharehome.share_study.model.dto.tag.TagGetDto;
+import top.sharehome.share_study.model.vo.college.CollegeAddVo;
+import top.sharehome.share_study.model.vo.college.CollegePageVo;
+import top.sharehome.share_study.model.vo.college.CollegeUpdateVo;
 import top.sharehome.share_study.service.CollegeService;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 高校相关接口
@@ -31,6 +36,7 @@ import java.util.List;
 @RequestMapping("/college")
 @Api(tags = "高校相关接口")
 @CrossOrigin
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class CollegeController {
     @Resource
     private CollegeService collegeService;
@@ -109,7 +115,7 @@ public class CollegeController {
         }
 
         // 执行批量删除高校的操作
-        collegeService.deleteBath(ids);
+        collegeService.deleteBatch(ids);
 
         return R.success("删除院校成功");
     }
@@ -169,9 +175,9 @@ public class CollegeController {
      * @param collegePageVo 高校分页Vo对象
      * @return 返回分页结果
      */
-    @PostMapping("/page/{current}/{pageSize}")
+    @GetMapping("/page/{current}/{pageSize}")
     @ApiOperation("高校分页查询接口")
-    public R<Page<CollegePageDto>> page(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, @ApiParam(name = "collegePageVo", value = "高校分页Vo对象", required = true) @RequestBody(required = false) CollegePageVo collegePageVo) {
+    public R<Page<CollegePageDto>> pageCollege(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, HttpServletRequest request, @ApiParam(name = "collegePageVo", value = "高校分页Vo对象", required = true) CollegePageVo collegePageVo) {
         // 判空
         if (ObjectUtils.isEmpty(current) || ObjectUtils.isEmpty(pageSize)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "分页参数为空");
@@ -183,7 +189,7 @@ public class CollegeController {
         }
 
         // 执行高校信息分页的操作
-        Page<CollegePageDto> page = collegeService.pageCollege(current, pageSize, collegePageVo);
+        Page<CollegePageDto> page = collegeService.pageCollege(current, pageSize,request, collegePageVo);
 
         return R.success(page, "分页查询成功");
     }
@@ -198,6 +204,32 @@ public class CollegeController {
     public R<List<CollegeGetDto>> list() {
         // 执行获取高校信息列表的操作
         List<CollegeGetDto> collegeGetDtoList = collegeService.listCollege();
+
+        return R.success(collegeGetDtoList, "回显高校名称成功");
+    }
+
+    /**
+     * 带有老师的高校ID和对应名称的List（s/a/u）
+     *
+     * @return 带有老师的高校名称List
+     */
+    @ApiOperation("带有老师的高校ID和对应名称的List")
+    @GetMapping(value = "/mapContainTeacher")
+    public R<Map<CollegeGetDto,List<TagGetDto>>> mapContainTeacher() {
+        // 执行获取高校信息列表的操作
+        Map<CollegeGetDto,List<TagGetDto>> collegeGetDtoMap = collegeService.mapCollegeContainTeacher();
+
+        return R.success(collegeGetDtoMap, "回显高校名称成功");
+    }
+
+    /**
+     * 带有资料标签的高校ID和对应名称的List（s/a）
+     */
+    @ApiOperation("带有资料标签的高校ID和对应名称的List")
+    @GetMapping(value = "/mapContainTag")
+    public R<Map<CollegeGetDto,List<TagGetDto>>> mapContainTag(){
+        // 执行获取高校信息列表的操作
+        Map<CollegeGetDto,List<TagGetDto>> collegeGetDtoList = collegeService.mapCollegeContainTag();
 
         return R.success(collegeGetDtoList, "回显高校名称成功");
     }

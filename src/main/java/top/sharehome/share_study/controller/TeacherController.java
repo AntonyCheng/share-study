@@ -7,18 +7,21 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.web.bind.annotation.*;
 import top.sharehome.share_study.common.constant.CommonConstant;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
-import top.sharehome.share_study.model.dto.TeacherGetDto;
-import top.sharehome.share_study.model.dto.TeacherLoginDto;
-import top.sharehome.share_study.model.dto.TeacherPageDto;
-import top.sharehome.share_study.model.vo.TeacherLoginVo;
-import top.sharehome.share_study.model.vo.TeacherPageVo;
-import top.sharehome.share_study.model.vo.TeacherRegisterVo;
-import top.sharehome.share_study.model.vo.TeacherUpdateVo;
+import top.sharehome.share_study.model.dto.teacher.TeacherGetDto;
+import top.sharehome.share_study.model.dto.teacher.TeacherLoginDto;
+import top.sharehome.share_study.model.dto.teacher.TeacherPageDto;
+import top.sharehome.share_study.model.vo.teacher.TeacherLoginVo;
+import top.sharehome.share_study.model.vo.teacher.TeacherPageVo;
+import top.sharehome.share_study.model.vo.teacher.TeacherRegisterVo;
+import top.sharehome.share_study.model.vo.teacher.TeacherUpdateVo;
+import top.sharehome.share_study.service.TeacherCensorService;
 import top.sharehome.share_study.service.TeacherService;
 
 import javax.annotation.Resource;
@@ -37,9 +40,13 @@ import java.util.Objects;
 @RequestMapping("/teacher")
 @Api(tags = "教师用户相关接口")
 @CrossOrigin
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class TeacherController {
     @Resource
     private TeacherService teacherService;
+
+    @Resource
+    private TeacherCensorService teacherCensorService;
 
     /**
      * 账号的匹配表达式
@@ -52,11 +59,7 @@ public class TeacherController {
     /**
      * 邮箱的匹配表达式
      */
-    private static final String MATCHER_EMAIL_REGEX = "([a-z0-9A-Z]+[-|\\.]?)+[a-z0-9A-Z]@([a-z0-9A-Z]+(-[a-z0-9A-Z]+)?\\.)+[a-zA-Z]{2,}";
-    /**
-     * 院校代码的匹配表达式
-     */
-    private static final String MATCHER_CODE_REGEX = "^\\d{5}$";
+    private static final String MATCHER_EMAIL_REGEX = "([a-z0-9A-Z_]+[-|\\.]?)+[a-z0-9A-Z_]@([a-z0-9A-Z]+(-[a-z0-9A-Z]+)?\\.)+[a-zA-Z]{2,}";
     /**
      * 账号长度最小值
      */
@@ -88,7 +91,8 @@ public class TeacherController {
                 , teacherRegisterVo.getPassword()
                 , teacherRegisterVo.getCheckPassword()
                 , teacherRegisterVo.getName()
-                , teacherRegisterVo.getCode())
+                , teacherRegisterVo.getEmail())
+                || ObjectUtils.isEmpty(teacherRegisterVo.getBelong())
                 || ObjectUtils.isEmpty(teacherRegisterVo.getGender())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "必填参数为空");
         }
@@ -103,11 +107,6 @@ public class TeacherController {
             throw new CustomizeReturnException(R.failure(RCodeEnum.USERNAME_LENGTH_DO_NOT_MATCH), "用户账户的长度不匹配");
         }
 
-        // 校验院校代码格式
-        if (!ReUtil.isMatch(MATCHER_CODE_REGEX, teacherRegisterVo.getCode())) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.CODE_IS_MALFORMED), "院校代码格式有误");
-        }
-
         // 校验账户格式
         if (!ReUtil.isMatch(MATCHER_ACCOUNT_REGEX, teacherRegisterVo.getAccount())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.USERNAME_CONTAINS_SPECIAL_CHARACTERS), "用户账户中包含特殊字符");
@@ -119,7 +118,7 @@ public class TeacherController {
         }
 
         // 校验邮箱格式
-        if (!ReUtil.isMatch(MATCHER_EMAIL_REGEX, teacherRegisterVo.getEmail())) {
+        if (!StringUtils.isEmpty(teacherRegisterVo.getEmail()) && !ReUtil.isMatch(MATCHER_EMAIL_REGEX, teacherRegisterVo.getEmail())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.EMAIL_FORMAT_VERIFICATION_FAILED), "邮箱格式有误");
         }
 
@@ -133,9 +132,9 @@ public class TeacherController {
             throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH), "不满足性别二元性");
         }
 
-        teacherService.register(teacherRegisterVo);
+        teacherCensorService.addTeacherCensor(teacherRegisterVo);
 
-        return R.success("注册成功");
+        return R.success("已经提交注册申请，结果通过邮箱告知");
     }
 
     /**
@@ -326,9 +325,9 @@ public class TeacherController {
      * @param teacherPageVo 教师分页Vo对象
      * @return 返回分页结果
      */
-    @PostMapping("/page/{current}/{pageSize}")
+    @GetMapping("/page/{current}/{pageSize}")
     @ApiOperation("教师分页查询接口")
-    public R<Page<TeacherPageDto>> page(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, @ApiParam(name = "teacherPageVo", value = "教师分页Vo对象", required = true) @RequestBody(required = false) TeacherPageVo teacherPageVo) {
+    public R<Page<TeacherPageDto>> page(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, @ApiParam(name = "teacherPageVo", value = "教师分页Vo对象", required = true) TeacherPageVo teacherPageVo) {
 
         if (ObjectUtils.isEmpty(current) || ObjectUtils.isEmpty(pageSize)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "分页参数为空");

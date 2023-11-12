@@ -2,9 +2,18 @@ package top.sharehome.share_study.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import top.sharehome.share_study.model.dto.*;
+import top.sharehome.share_study.model.dto.post.PostInfoDto;
+import top.sharehome.share_study.model.dto.post.PostPageDto;
+import top.sharehome.share_study.model.dto.resource.ResourceGetDto;
+import top.sharehome.share_study.model.dto.resource.ResourcePageDto;
+import top.sharehome.share_study.model.dto.user.UserResourceGetDto;
 import top.sharehome.share_study.model.entity.Resource;
-import top.sharehome.share_study.model.vo.*;
+import top.sharehome.share_study.model.vo.post.PostAddVo;
+import top.sharehome.share_study.model.vo.post.PostPageVo;
+import top.sharehome.share_study.model.vo.resource.ResourcePageVo;
+import top.sharehome.share_study.model.vo.resource.ResourceUpdateVo;
+import top.sharehome.share_study.model.vo.user.UserResourcePageVo;
+import top.sharehome.share_study.model.vo.user.UserResourceUpdateVo;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -114,14 +123,6 @@ public interface ResourceService extends IService<Resource> {
      * @return 返回分页结果
      */
     Page<PostPageDto> pagePost(Integer current, Integer pageSize, HttpServletRequest request, PostPageVo postPageVo);
-
-    /**
-     * 发布帖子接口
-     *
-     * @param postAddVo 帖子添加Vo
-     * @param request   获取Session中的登录状态
-     */
-    void add(PostAddVo postAddVo, HttpServletRequest request);
 
     /**
      * 帖子详情接口

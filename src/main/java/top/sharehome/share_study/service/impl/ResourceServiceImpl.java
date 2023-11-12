@@ -1,14 +1,21 @@
 package top.sharehome.share_study.service.impl;
 
+import cn.hutool.json.JSONUtil;
 import com.alibaba.excel.EasyExcelFactory;
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.hyperledger.fabric.client.*;
+import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.ReturnedMessage;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.sharehome.share_study.common.constant.CommonConstant;
@@ -17,26 +24,31 @@ import top.sharehome.share_study.common.exception_handler.customize.CustomizeRet
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeTransactionException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
-import top.sharehome.share_study.config.FabricGatewayConfig;
+import top.sharehome.share_study.config.RabbitMqConfig;
 import top.sharehome.share_study.mapper.*;
-import top.sharehome.share_study.model.dto.*;
+import top.sharehome.share_study.model.dto.post.PostInfoDto;
+import top.sharehome.share_study.model.dto.post.PostPageDto;
+import top.sharehome.share_study.model.dto.resource.ResourceGetDto;
+import top.sharehome.share_study.model.dto.resource.ResourcePageDto;
+import top.sharehome.share_study.model.dto.teacher.TeacherLoginDto;
+import top.sharehome.share_study.model.dto.user.UserResourceGetDto;
 import top.sharehome.share_study.model.entity.*;
-import top.sharehome.share_study.model.vo.*;
+import top.sharehome.share_study.model.vo.post.PostPageVo;
+import top.sharehome.share_study.model.vo.resource.ResourcePageVo;
+import top.sharehome.share_study.model.vo.resource.ResourceUpdateVo;
+import top.sharehome.share_study.model.vo.user.UserResourcePageVo;
+import top.sharehome.share_study.model.vo.user.UserResourceUpdateVo;
 import top.sharehome.share_study.service.FileOssService;
 import top.sharehome.share_study.service.ResourceService;
-import top.sharehome.share_study.utils.FabricGatewayUtil;
+import top.sharehome.share_study.utils.object.ObjectDataUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
-
-import static org.apache.tomcat.util.codec.binary.StringUtils.newStringUtf8;
 
 /**
  * 教学资料ServiceImpl
@@ -44,6 +56,7 @@ import static org.apache.tomcat.util.codec.binary.StringUtils.newStringUtf8;
  * @author AntonyCheng
  */
 @Service
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> implements ResourceService {
     @javax.annotation.Resource
     private ResourceMapper resourceMapper;
@@ -64,7 +77,10 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     private CollectMapper collectMapper;
 
     @javax.annotation.Resource
-    FabricGatewayUtil fabricGatewayUtil;
+    private TagMapper tagMapper;
+
+    @javax.annotation.Resource(name = "noSingletonRabbitTemplate")
+    private RabbitTemplate noSingletonRabbitTemplate;
 
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
@@ -125,11 +141,9 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "教学资料数据删除失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
 
-        fileOssService.delete(selectResult.getUrl());
-
-        //删除链操作
-
-
+        if (!StringUtils.isEmpty(selectResult.getUrl())) {
+            fileOssService.delete(selectResult.getUrl());
+        }
     }
 
     @Override
@@ -174,7 +188,9 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         }
 
         urls.forEach(url -> {
-            fileOssService.delete(url);
+            if (!StringUtils.isEmpty(url)) {
+                fileOssService.delete(url);
+            }
         });
     }
 
@@ -231,10 +247,6 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "发表该教学资料的老师不存在");
         }
 
-        if (!Objects.equals(targetTeacher.getId(), teacherLoginDto.getId()) && (Objects.equals(teacherLoginDto.getRole(), CommonConstant.ADMIN_ROLE) && !Objects.equals(targetTeacher.getRole(), CommonConstant.DEFAULT_ROLE))) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "管理员没有权限在此修改其他管理员和超级管理员的教学资料");
-        }
-
         resultFromDatabase.setStatus(resourceUpdateVo.getStatus());
 
         int updateResult = resourceMapper.updateById(resultFromDatabase);
@@ -244,40 +256,34 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "修改教学资料失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
 
-        //管理员修改链//////////////////////////////////////////////////////////////////
-        if(teacherLoginDto.getRole()==1){
-            try {
-                Contract contract = fabricGatewayUtil.getContract();
-                String operateName = "管理员:" + teacherLoginDto.getName() + "(ID=" + teacherLoginDto.getId() + ")" + "执行修改资料操作";
-                contract.newProposal("updateResource")
-                        .addArguments(String.valueOf(resultFromDatabase.getId()), operateName, String.valueOf(resultFromDatabase.getBelong()),
-                                resultFromDatabase.getName(), resultFromDatabase.getInfo(), resultFromDatabase.getUrl(), String.valueOf(resultFromDatabase.getScore()), String.valueOf(resultFromDatabase.getStatus()),
-                                String.valueOf(resultFromDatabase.getCreateTime()), String.valueOf(resultFromDatabase.getUpdateTime()), String.valueOf(resultFromDatabase.getIsDeleted()))
-                        .build()
-                        .endorse()
-                        .submitAsync();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+        String operate = "管理员:" + teacherLoginDto.getName() + "(ID=" + teacherLoginDto.getId() + ")执行修改资料操作";
+        HashMap<String, Object> rabbitMqResult = new HashMap<>();
+        rabbitMqResult.put("operate", operate);
+        rabbitMqResult.put("object", resultFromDatabase);
+        rabbitMqResult.put("method", CommonConstant.UPDATE_RESOURCE);
+        try {
+            noSingletonRabbitTemplate.setConfirmCallback(new RabbitTemplate.ConfirmCallback() {
+                @Override
+                public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+                    if (!ack) {
+                        throw new CustomizeReturnException(R.failure(RCodeEnum.PROVIDER_TO_EXCHANGE_ERROR));
+                    }
+                }
+            });
+            noSingletonRabbitTemplate.setReturnsCallback(new RabbitTemplate.ReturnsCallback() {
+                @Override
+                public void returnedMessage(ReturnedMessage returnedMessage) {
+                    log.error(returnedMessage.toString());
+                    throw new CustomizeReturnException(R.failure(RCodeEnum.EXCHANGE_TO_QUEUE_ERROR));
+                }
+            });
 
-        if (teacherLoginDto.getRole()==2){
-            try {
-                Contract contract = fabricGatewayUtil.getContract();
-                String operateName = "超级管理员:" + teacherLoginDto.getName() + "(ID=" + teacherLoginDto.getId() + ")" + "执行修改资料操作";
-                contract.newProposal("updateResource")
-                        .addArguments(String.valueOf(resultFromDatabase.getId()), operateName, String.valueOf(resultFromDatabase.getBelong()),
-                                resultFromDatabase.getName(), resultFromDatabase.getInfo(), resultFromDatabase.getUrl(), String.valueOf(resultFromDatabase.getScore()), String.valueOf(resultFromDatabase.getStatus()),
-                                String.valueOf(resultFromDatabase.getCreateTime()), String.valueOf(resultFromDatabase.getUpdateTime()), String.valueOf(resultFromDatabase.getIsDeleted()))
-                        .build()
-                        .endorse()
-                        .submitAsync();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            noSingletonRabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, "resource." + CommonConstant.UPDATE_RESOURCE, JSON.toJSONString(rabbitMqResult));
+        } catch (AmqpException exception) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.MESSAGE_QUEUE_SEND_ERROR));
         }
-
     }
+
 
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
@@ -285,8 +291,10 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         Page<Resource> page = new Page<>(current, pageSize);
         Page<ResourcePageDto> returnResult = new Page<>(current, pageSize);
         LambdaQueryWrapper<Resource> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.orderByAsc(Resource::getCreateTime);
-        if (resourcePageVo == null) {
+        lambdaQueryWrapper
+                .orderByDesc(Resource::getCreateTime);
+
+        if (ObjectDataUtil.isAllObjectDataEmpty(resourcePageVo)) {
             this.page(page, lambdaQueryWrapper);
             BeanUtils.copyProperties(page, returnResult, "records");
             List<ResourcePageDto> pageDtoList = page.getRecords().stream().map(resource -> {
@@ -299,6 +307,13 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
                     throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "教学资料所属教师不存在");
                 }
                 resourcePageDto.setBelongName(teacher.getName());
+                LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+                commentLambdaQueryWrapper.eq(Comment::getResource, resource.getId());
+                resourcePageDto.setCommentNumber(Math.toIntExact(commentMapper.selectCount(commentLambdaQueryWrapper)));
+                List<String> tagNames = JSONUtil.toList(JSONUtil.parseArray(resource.getTags()), Long.class).stream().map(tagId -> {
+                    return tagMapper.selectById(tagId).getName();
+                }).collect(Collectors.toList());
+                resourcePageDto.setTags(tagNames);
                 return resourcePageDto;
             }).collect(Collectors.toList());
             returnResult.setRecords(pageDtoList);
@@ -306,27 +321,30 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         }
 
         lambdaQueryWrapper.like(!StringUtils.isEmpty(resourcePageVo.getInfo()), Resource::getInfo, resourcePageVo.getInfo()).like(!StringUtils.isEmpty(resourcePageVo.getName()), Resource::getName, resourcePageVo.getName()).like(!ObjectUtils.isEmpty(resourcePageVo.getStatus()), Resource::getStatus, resourcePageVo.getStatus());
-        this.page(page, lambdaQueryWrapper);
-        BeanUtils.copyProperties(page, returnResult, "records");
 
         String belongName = resourcePageVo.getBelongName();
-        List<Long> teacherIds = new ArrayList<>();
+        List<Long> teacherIds = null;
         if (!StringUtils.isEmpty(belongName)) {
             LambdaQueryWrapper<Teacher> belongNameLambdaQueryWrapper = new LambdaQueryWrapper<>();
             belongNameLambdaQueryWrapper.like(Teacher::getName, belongName);
             List<Teacher> teachers = teacherMapper.selectList(belongNameLambdaQueryWrapper);
             teacherIds = teachers.stream().map(Teacher::getId).collect(Collectors.toList());
         }
+
         List<Long> finalTeacherIds = teacherIds;
 
-        if (finalTeacherIds.isEmpty()) {
-            page.setRecords(new ArrayList<>());
+        if (!(!Objects.isNull(finalTeacherIds) && finalTeacherIds.isEmpty())
+                && !(!Objects.isNull(resourcePageVo.getTag()) && Objects.isNull(tagMapper.selectById(resourcePageVo.getTag())))) {
+            if (!Objects.isNull(finalTeacherIds) && finalTeacherIds.isEmpty()) {
+                lambdaQueryWrapper
+                        .in(Resource::getBelong, finalTeacherIds);
+            }
+            lambdaQueryWrapper.like(Resource::getTags, resourcePageVo.getTag());
+            this.page(page, lambdaQueryWrapper);
         }
+        BeanUtils.copyProperties(page, returnResult, "records");
 
         List<ResourcePageDto> pageDtoList = page.getRecords().stream().map(record -> {
-            if (!finalTeacherIds.isEmpty() && !finalTeacherIds.contains(record.getBelong())) {
-                return null;
-            }
             ResourcePageDto resourcePageDto = new ResourcePageDto();
             BeanUtils.copyProperties(record, resourcePageDto);
             LambdaQueryWrapper<Teacher> teacherLambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -336,10 +354,15 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
                 throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "教学资料所属教师不存在");
             }
             resourcePageDto.setBelongName(teacher.getName());
+            LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            commentLambdaQueryWrapper.eq(Comment::getResource, record.getId());
+            resourcePageDto.setCommentNumber(Math.toIntExact(commentMapper.selectCount(commentLambdaQueryWrapper)));
+            List<String> tagNames = JSONUtil.toList(JSONUtil.parseArray(record.getTags()), Long.class).stream().map(tagId -> {
+                return tagMapper.selectById(tagId).getName();
+            }).collect(Collectors.toList());
+            resourcePageDto.setTags(tagNames);
             return resourcePageDto;
         }).collect(Collectors.toList());
-        pageDtoList.removeIf(Objects::isNull);
-        returnResult.setTotal(pageDtoList.size());
         returnResult.setRecords(pageDtoList);
         return returnResult;
     }
@@ -354,9 +377,11 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         Page<Resource> page = new Page<>(current, pageSize);
         Page<PostPageDto> returnResult = new Page<>(current, pageSize);
         LambdaQueryWrapper<Resource> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(Resource::getBelong, id).orderByAsc(Resource::getCreateTime);
+        lambdaQueryWrapper
+                .eq(Resource::getBelong, id)
+                .orderByDesc(Resource::getCreateTime);
 
-        if (userResourcePageVo == null) {
+        if (ObjectDataUtil.isAllObjectDataEmpty(userResourcePageVo)) {
             this.page(page, lambdaQueryWrapper);
             BeanUtils.copyProperties(page, returnResult, "records");
             List<PostPageDto> pageDtoList = page.getRecords().stream().map(resource -> {
@@ -400,8 +425,13 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
 
                 return userResourcePageDto;
             }).collect(Collectors.toList());
-            pageDtoList.removeIf(Objects::isNull);
-            returnResult.setTotal(pageDtoList.size());
+            pageDtoList.removeIf(postPageDto -> {
+                if (Objects.isNull(postPageDto)) {
+                    returnResult.setTotal(returnResult.getTotal() - 1);
+                    return true;
+                }
+                return false;
+            });
             returnResult.setRecords(pageDtoList);
             return returnResult;
         }
@@ -445,8 +475,13 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
 
             return userResourcePageDto;
         }).collect(Collectors.toList());
-        pageDtoList.removeIf(Objects::isNull);
-        returnResult.setTotal(pageDtoList.size());
+        pageDtoList.removeIf(postPageDto -> {
+            if (Objects.isNull(postPageDto)) {
+                returnResult.setTotal(returnResult.getTotal() - 1);
+                return true;
+            }
+            return false;
+        });
         returnResult.setRecords(pageDtoList);
         return returnResult;
     }
@@ -473,7 +508,9 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "发表该教学资料的老师不存在");
         }
 
-        if (!Objects.equals(targetTeacher.getId(), teacherLoginDto.getId()) && (Objects.equals(teacherLoginDto.getRole(), CommonConstant.ADMIN_ROLE) && !Objects.equals(targetTeacher.getRole(), CommonConstant.DEFAULT_ROLE))) {
+        if (!Objects.equals(targetTeacher.getId(), teacherLoginDto.getId())
+                && (Objects.equals(teacherLoginDto.getRole(), CommonConstant.ADMIN_ROLE)
+                && !Objects.equals(targetTeacher.getRole(), CommonConstant.DEFAULT_ROLE))) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "管理员没有权限在此删除其他管理员和超级管理员的教学资料");
         }
 
@@ -486,16 +523,9 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         if (deleteResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_DELETION_FAILED), "教学资料数据删除失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
-
-        fileOssService.delete(selectResult.getUrl());
-//待定。
-        //用户自己删除链操作//////////////////////////////////////////////////////////////////////
-//        try {
-//            Contract contract = fabricUtil.getContract();
-//            contract.submitTransaction("deleteResource", String.valueOf(id));
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+        if (!StringUtils.isEmpty(selectResult.getUrl())) {
+            fileOssService.delete(selectResult.getUrl());
+        }
     }
 
     @Override
@@ -573,19 +603,31 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "修改教学资料失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
 
-        //修改链操作///////////////////////////////////////////////////////////
+        String operate = "用户:" + teacherLoginDto.getName() + "(ID=" + teacherLoginDto.getId() + ")执行修改资料操作";
+        HashMap<String, Object> rabbitMqResult = new HashMap<>();
+        rabbitMqResult.put("operate", operate);
+        rabbitMqResult.put("object", resultFromDatabase);
+        rabbitMqResult.put("method", CommonConstant.UPDATE_RESOURCE);
         try {
-            Contract contract = fabricGatewayUtil.getContract();
-            String operateName = "普通用户:" + teacherLoginDto.getName() + "(ID=" + teacherLoginDto.getId() + ")" + "执行修改资料操作";
-            contract.newProposal("updateResource")
-                    .addArguments(String.valueOf(resultFromDatabase.getId()), operateName, String.valueOf(resultFromDatabase.getBelong()),
-                            resultFromDatabase.getName(), resultFromDatabase.getInfo(), resultFromDatabase.getUrl(), String.valueOf(resultFromDatabase.getScore()), String.valueOf(resultFromDatabase.getStatus()),
-                            String.valueOf(resultFromDatabase.getCreateTime()), String.valueOf(resultFromDatabase.getUpdateTime()), String.valueOf(resultFromDatabase.getIsDeleted()))
-                    .build()
-                    .endorse()
-                    .submitAsync();
-        } catch (Exception e) {
-            e.printStackTrace();
+            noSingletonRabbitTemplate.setConfirmCallback(new RabbitTemplate.ConfirmCallback() {
+                @Override
+                public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+                    if (!ack) {
+                        throw new CustomizeReturnException(R.failure(RCodeEnum.PROVIDER_TO_EXCHANGE_ERROR));
+                    }
+                }
+            });
+            noSingletonRabbitTemplate.setReturnsCallback(new RabbitTemplate.ReturnsCallback() {
+                @Override
+                public void returnedMessage(ReturnedMessage returnedMessage) {
+                    log.error(returnedMessage.toString());
+                    throw new CustomizeReturnException(R.failure(RCodeEnum.EXCHANGE_TO_QUEUE_ERROR));
+                }
+            });
+
+            noSingletonRabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, "resource." + CommonConstant.UPDATE_RESOURCE, JSON.toJSONString(rabbitMqResult));
+        } catch (AmqpException exception) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.MESSAGE_QUEUE_SEND_ERROR));
         }
     }
 
@@ -599,9 +641,10 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         Page<Resource> page = new Page<>(current, pageSize);
         Page<PostPageDto> returnResult = new Page<>(current, pageSize);
         LambdaQueryWrapper<Resource> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.orderByDesc(Resource::getCreateTime);
+        lambdaQueryWrapper
+                .orderByDesc(Resource::getCreateTime);
 
-        if (postPageVo == null) {
+        if (ObjectDataUtil.isAllObjectDataEmpty(postPageVo)) {
             this.page(page, lambdaQueryWrapper);
             BeanUtils.copyProperties(page, returnResult, "records");
             List<PostPageDto> pageDtoList = page.getRecords().stream().map(resource -> {
@@ -634,24 +677,33 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
                 commentLambdaQueryWrapper.eq(Comment::getResource, resource.getId());
                 Integer commentCount = Math.toIntExact(commentMapper.selectCount(commentLambdaQueryWrapper));
                 postPageDto.setCommentCount(commentCount);
-
                 LambdaUpdateWrapper<Collect> collectLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
-                collectLambdaUpdateWrapper.eq(Collect::getBelong, teacherLoginDto.getId());
+                collectLambdaUpdateWrapper
+                        .eq(Collect::getBelong, teacherLoginDto.getId())
+                        .eq(Collect::getStatus, 0);
                 List<Collect> collectList = collectMapper.selectList(collectLambdaUpdateWrapper);
                 List<Long> resourceIds = collectList.stream().map(Collect::getResource).collect(Collectors.toList());
                 postPageDto.setCollectStatus(resourceIds.contains(resource.getId()) ? 1 : 0);
-
+                List<String> tagNames = JSONUtil.toList(JSONUtil.parseArray(resource.getTags()), Long.class).stream().map(tagId -> {
+                    return tagMapper.selectById(tagId).getName();
+                }).collect(Collectors.toList());
+                postPageDto.setResourceTags(tagNames);
                 return postPageDto;
             }).collect(Collectors.toList());
-            pageDtoList.removeIf(Objects::isNull);
-            returnResult.setTotal(pageDtoList.size());
+            pageDtoList.removeIf(postPageDto -> {
+                if (Objects.isNull(postPageDto)) {
+                    returnResult.setTotal(returnResult.getTotal() - 1);
+                    return true;
+                }
+                return false;
+            });
             returnResult.setRecords(pageDtoList);
             return returnResult;
         }
 
-        lambdaQueryWrapper.like(!StringUtils.isEmpty(postPageVo.getName()), Resource::getName, postPageVo.getName()).like(!StringUtils.isEmpty(postPageVo.getInfo()), Resource::getInfo, postPageVo.getInfo());
-        this.page(page, lambdaQueryWrapper);
-        BeanUtils.copyProperties(page, returnResult, "records");
+        lambdaQueryWrapper
+                .like(!StringUtils.isEmpty(postPageVo.getName()), Resource::getName, postPageVo.getName())
+                .like(!StringUtils.isEmpty(postPageVo.getInfo()), Resource::getInfo, postPageVo.getInfo());
 
         String belongName = postPageVo.getBelongName();
         List<Long> belongIds = null;
@@ -670,24 +722,37 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             collegeIds = colleges.stream().map(College::getId).collect(Collectors.toList());
         }
 
-        if (belongIds != null && belongIds.isEmpty()) {
-            page.setRecords(new ArrayList<>());
-        }
-        if (collegeIds != null && collegeIds.isEmpty()) {
-            page.setRecords(new ArrayList<>());
-        }
-
         List<Long> finalBelongIds = belongIds;
         List<Long> finalCollegeIds = collegeIds;
 
-        List<PostPageDto> pageDtoList = page.getRecords().stream().map(resource -> {
-            if (finalBelongIds != null && !finalBelongIds.isEmpty() && !finalBelongIds.contains(resource.getBelong())) {
-                return null;
+        if (!((!Objects.isNull(finalBelongIds) && finalBelongIds.isEmpty()) || (!Objects.isNull(finalCollegeIds) && finalCollegeIds.isEmpty()))
+                && !(!Objects.isNull(postPageVo.getTagId()) && Objects.isNull(tagMapper.selectById(postPageVo.getTagId())))) {
+            if (!Objects.isNull(finalBelongIds) && !finalBelongIds.isEmpty()) {
+                lambdaQueryWrapper
+                        .in(Resource::getBelong, finalBelongIds);
             }
-            if (finalCollegeIds != null && !finalCollegeIds.isEmpty() && !finalCollegeIds.contains(collegeMapper.selectById(teacherMapper.selectById(resource.getBelong()).getBelong()).getId())) {
-                return null;
+            if (!Objects.isNull(finalCollegeIds) && !finalCollegeIds.isEmpty()) {
+                lambdaQueryWrapper
+                        .in(Resource::getBelong, finalCollegeIds.stream()
+                                .flatMap(collegeId -> {
+                                    LambdaQueryWrapper<Teacher> teacherLambdaQueryWrapper = new LambdaQueryWrapper<>();
+                                    teacherLambdaQueryWrapper.eq(Teacher::getBelong, collegeId);
+                                    return teacherMapper.selectList(teacherLambdaQueryWrapper).stream()
+                                            .map(Teacher::getId);
+                                })
+                                .distinct()
+                                .collect(Collectors.toList())
+                        );
             }
+            if (ObjectUtils.isNotEmpty(postPageVo.getTagId())) {
+                lambdaQueryWrapper.like(Resource::getTags, postPageVo.getTagId());
+            }
+            this.page(page, lambdaQueryWrapper);
+        }
 
+        BeanUtils.copyProperties(page, returnResult, "records");
+
+        List<PostPageDto> pageDtoList = page.getRecords().stream().map(resource -> {
             if (resource.getStatus() == 1) {
                 return null;
             }
@@ -711,6 +776,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             postPageDto.setResourceInfo(resource.getInfo());
             postPageDto.setResourceScore(resource.getScore());
             postPageDto.setResourceUrl(resource.getUrl());
+            postPageDto.setCreateTime(resource.getCreateTime());
             LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
             commentLambdaQueryWrapper.eq(Comment::getResource, resource.getId());
             Integer commentCount = Math.toIntExact(commentMapper.selectCount(commentLambdaQueryWrapper));
@@ -724,54 +790,21 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             } else {
                 postPageDto.setCollectStatus(0);
             }
-
+            List<String> tagNames = JSONUtil.toList(JSONUtil.parseArray(resource.getTags()), Long.class).stream().map(tagId -> {
+                return tagMapper.selectById(tagId).getName();
+            }).collect(Collectors.toList());
+            postPageDto.setResourceTags(tagNames);
             return postPageDto;
         }).collect(Collectors.toList());
-        pageDtoList.removeIf(Objects::isNull);
-        returnResult.setTotal(pageDtoList.size());
+        pageDtoList.removeIf(postPageDto -> {
+            if (Objects.isNull(postPageDto)) {
+                returnResult.setTotal(returnResult.getTotal() - 1);
+                return true;
+            }
+            return false;
+        });
         returnResult.setRecords(pageDtoList);
         return returnResult;
-    }
-
-    @Override
-    @Transactional(rollbackFor = CustomizeTransactionException.class)
-    public void add(PostAddVo postAddVo, HttpServletRequest request) {
-        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
-        if (teacherLoginDto == null) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
-        }
-        if (!Objects.equals(postAddVo.getBelong(), teacherLoginDto.getId())) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED));
-        }
-
-        Resource resource = new Resource();
-        BeanUtils.copyProperties(postAddVo, resource);
-
-        int insertResult = resourceMapper.insert(resource);
-
-        // 判断数据库插入结果
-        if (insertResult == 0) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_ADDITION_FAILED), "添加教学资料失败，从数据库返回的影响行数为0，且在之前没有报出异常");
-        }
-
-        LambdaUpdateWrapper<Teacher> teacherLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
-        teacherLambdaUpdateWrapper.set(Teacher::getScore, teacherMapper.selectById(teacherLoginDto.getId()).getScore() + 1).eq(Teacher::getId, teacherLoginDto.getId());
-        teacherMapper.update(null, teacherLambdaUpdateWrapper);
-
-        //入链操作/////////////////////////////////////////////////////////////////////////////////////
-        try {
-            Contract contract = fabricGatewayUtil.getContract();
-            String operateName = "普通用户:" + teacherLoginDto.getName() + "(ID=" + teacherLoginDto.getId() + ")" + "执行增加资料操作";
-            contract.newProposal("createResource")
-                    .addArguments(String.valueOf(resource.getId()), operateName, String.valueOf(resource.getBelong()),
-                            resource.getName(), resource.getInfo(), resource.getUrl(), String.valueOf(resource.getScore()), String.valueOf(resource.getStatus()),
-                            String.valueOf(resource.getCreateTime()), String.valueOf(resource.getUpdateTime()), String.valueOf(resource.getIsDeleted()))
-                    .build()
-                    .endorse()
-                    .submitAsync();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -815,6 +848,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         postInfoDto.setResourceInfo(resource.getInfo());
         postInfoDto.setResourceUrl(resource.getUrl());
         postInfoDto.setResourceScore(resource.getScore());
+        postInfoDto.setCreateTime(resource.getCreateTime());
 
         LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
         commentLambdaQueryWrapper.eq(Comment::getResource, resource.getId());

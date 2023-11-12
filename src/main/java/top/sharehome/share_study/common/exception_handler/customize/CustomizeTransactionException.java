@@ -1,6 +1,7 @@
 package top.sharehome.share_study.common.exception_handler.customize;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
 
@@ -10,6 +11,7 @@ import top.sharehome.share_study.common.response.RCodeEnum;
  * @author AntonyCheng
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class CustomizeTransactionException extends RuntimeException {
 
     private final String description = "数据库事物处理出现错误，回滚到该异常";

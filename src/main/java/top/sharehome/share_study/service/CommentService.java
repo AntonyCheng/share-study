@@ -2,14 +2,14 @@ package top.sharehome.share_study.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import top.sharehome.share_study.model.dto.CommentGetDto;
-import top.sharehome.share_study.model.dto.CommentPageDto;
-import top.sharehome.share_study.model.dto.PostCommentPageDto;
-import top.sharehome.share_study.model.dto.UserCommentPageDto;
+import top.sharehome.share_study.model.dto.comment.CommentGetDto;
+import top.sharehome.share_study.model.dto.comment.CommentPageDto;
+import top.sharehome.share_study.model.dto.post.PostCommentPageDto;
+import top.sharehome.share_study.model.dto.user.UserCommentPageDto;
 import top.sharehome.share_study.model.entity.Comment;
-import top.sharehome.share_study.model.vo.CommentPageVo;
-import top.sharehome.share_study.model.vo.CommentUpdateVo;
-import top.sharehome.share_study.model.vo.PostCommentAddVo;
+import top.sharehome.share_study.model.vo.comment.CommentPageVo;
+import top.sharehome.share_study.model.vo.comment.CommentUpdateVo;
+import top.sharehome.share_study.model.vo.post.PostCommentAddVo;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -70,7 +70,7 @@ public interface CommentService extends IService<Comment> {
      * @param commentPageVo 交流评论分页Vo对象
      * @return 返回分页结果
      */
-    Page<CommentPageDto> pageComment(Integer current, Integer pageSize, CommentPageVo commentPageVo);
+    Page<CommentPageDto> pageComment(Integer current, Integer pageSize, HttpServletRequest request, CommentPageVo commentPageVo);
 
     /**
      * 交流评论分页查询接口（s/a）

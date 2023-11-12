@@ -51,11 +51,19 @@ public class College implements Serializable {
     private String code;
 
     /**
+     * 高校坐标
+     */
+    @TableField(value = "college_location")
+    @ApiModelProperty(value = "高校坐标")
+    @ExcelProperty(value = "高校坐标", index = 3)
+    private String location;
+
+    /**
      * 高校录入时间
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "高校录入时间")
-    @ExcelProperty(value = "高校录入时间", index = 3, converter = ExcelLocalDateTimeConverter.class)
+    @ExcelProperty(value = "高校录入时间", index = 4, converter = ExcelLocalDateTimeConverter.class)
     private LocalDateTime createTime;
 
     /**
@@ -63,7 +71,7 @@ public class College implements Serializable {
      */
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     @ApiModelProperty(value = "高校更新时间")
-    @ExcelProperty(value = "高校更新时间", index = 4, converter = ExcelLocalDateTimeConverter.class)
+    @ExcelProperty(value = "高校更新时间", index = 5, converter = ExcelLocalDateTimeConverter.class)
     private LocalDateTime updateTime;
 
     /**
@@ -72,7 +80,7 @@ public class College implements Serializable {
     @TableField(value = "is_deleted", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "逻辑删除（0表示未删除，1表示已删除）")
     @TableLogic
-    @ExcelProperty(value = "逻辑删除（0表示未删除，1表示已删除）", index = 5, converter = ExcelIntegerConverter.class)
+    @ExcelProperty(value = "逻辑删除（0表示未删除，1表示已删除）", index = 6, converter = ExcelIntegerConverter.class)
     private Integer isDeleted;
 
     public static final String COL_COLLEGE_ID = "college_id";
@@ -80,6 +88,8 @@ public class College implements Serializable {
     public static final String COL_COLLEGE_NAME = "college_name";
 
     public static final String COL_COLLEGE_CODE = "college_code";
+
+    public static final String COL_COLLEGE_LOCATION = "college_location";
 
     public static final String COL_CREATE_TIME = "create_time";
 

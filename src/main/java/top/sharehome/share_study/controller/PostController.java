@@ -6,19 +6,22 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.web.bind.annotation.*;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
-import top.sharehome.share_study.model.dto.PostCommentPageDto;
-import top.sharehome.share_study.model.dto.PostInfoDto;
-import top.sharehome.share_study.model.dto.PostPageDto;
-import top.sharehome.share_study.model.vo.PostAddVo;
-import top.sharehome.share_study.model.vo.PostCollectUpdateVo;
-import top.sharehome.share_study.model.vo.PostCommentAddVo;
-import top.sharehome.share_study.model.vo.PostPageVo;
+import top.sharehome.share_study.model.dto.post.PostCommentPageDto;
+import top.sharehome.share_study.model.dto.post.PostInfoDto;
+import top.sharehome.share_study.model.dto.post.PostPageDto;
+import top.sharehome.share_study.model.vo.post.PostAddVo;
+import top.sharehome.share_study.model.vo.post.PostCollectUpdateVo;
+import top.sharehome.share_study.model.vo.post.PostCommentAddVo;
+import top.sharehome.share_study.model.vo.post.PostPageVo;
 import top.sharehome.share_study.service.CollectService;
 import top.sharehome.share_study.service.CommentService;
+import top.sharehome.share_study.service.ResourceCensorService;
 import top.sharehome.share_study.service.ResourceService;
 
 import javax.annotation.Resource;
@@ -34,6 +37,7 @@ import java.util.Objects;
 @RequestMapping("/post")
 @Api(tags = "用户帖子相关接口")
 @CrossOrigin
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class PostController {
     @Resource
     private ResourceService resourceService;
@@ -43,6 +47,9 @@ public class PostController {
 
     @Resource
     private CollectService collectService;
+
+    @Resource
+    private ResourceCensorService resourceCensorService;
 
     /**
      * 用户帖子分页
@@ -55,7 +62,7 @@ public class PostController {
      */
     @GetMapping("/page/{current}/{pageSize}")
     @ApiOperation("用户帖子分页")
-    public R<Page<PostPageDto>> pagePost(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, HttpServletRequest request, @ApiParam(name = "resourcePageVo", value = "教学资料分页Vo对象", required = true) @RequestBody(required = false) PostPageVo postPageVo) {
+    public R<Page<PostPageDto>> pagePost(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, HttpServletRequest request, @ApiParam(name = "postPageVo", value = "帖子分页Vo对象", required = true) PostPageVo postPageVo) {
         // 判空
         if (ObjectUtils.isEmpty(current) || ObjectUtils.isEmpty(pageSize)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "分页参数为空");
@@ -83,14 +90,13 @@ public class PostController {
     public R<String> add(@ApiParam(name = "postAddVo", value = "帖子添加Vo", required = true) @RequestBody PostAddVo postAddVo, HttpServletRequest request) {
         // 判空
         if (postAddVo == null
-                || StringUtils.isAnyEmpty(postAddVo.getName(), postAddVo.getUrl())) {
+                || StringUtils.isEmpty(postAddVo.getName())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
         }
 
-        // 执行添加教学资料的操作
-        resourceService.add(postAddVo, request);
+        resourceCensorService.addResourceCensor(postAddVo, request);
 
-        return R.success("添加教学资料成功");
+        return R.success("发表成功，审核后正式发布");
     }
 
     /**
@@ -179,6 +185,13 @@ public class PostController {
         return R.success("评论成功");
     }
 
+    /**
+     * 删除评论
+     *
+     * @param id      所删评论ID
+     * @param request 获取Session中登录状态
+     * @return 返回删除的结果
+     */
     @DeleteMapping("/comment/delete/{id}")
     @ApiOperation("删除评论")
     public R<String> deleteComment(@PathVariable("id") Long id, HttpServletRequest request) {

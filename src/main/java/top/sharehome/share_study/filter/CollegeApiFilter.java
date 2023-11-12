@@ -7,7 +7,7 @@ import org.springframework.util.AntPathMatcher;
 import top.sharehome.share_study.common.constant.CommonConstant;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
-import top.sharehome.share_study.model.dto.TeacherLoginDto;
+import top.sharehome.share_study.model.dto.teacher.TeacherLoginDto;
 
 import javax.servlet.*;
 import javax.servlet.annotation.WebFilter;
@@ -32,16 +32,14 @@ public class CollegeApiFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         TeacherLoginDto adminLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
-        TeacherLoginDto userLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
 
         String requestUri = request.getRequestURI();
 
         boolean matchCollegeResult = ANT_PATH_MATCHER.match("/api/college/**", requestUri);
-
         String normalUserRequestList = "/api/college/list";
-        boolean normalUserRequest = Objects.equals(requestUri, normalUserRequestList);
 
-        if (!matchCollegeResult || (normalUserRequest && adminLoginDto != null) || (normalUserRequest && userLoginDto != null)) {
+        if (!matchCollegeResult
+                || ANT_PATH_MATCHER.match(normalUserRequestList, requestUri)) {
             filterChain.doFilter(request, response);
             return;
         }

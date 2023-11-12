@@ -3,6 +3,7 @@ package top.sharehome.share_study.common.exception_handler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -31,9 +32,9 @@ public class GlobalExceptionHandler {
      * @return 返回处理结果
      */
     @ExceptionHandler(Exception.class)
-    public R globalExceptionHandler(Exception exception) {
+    public R<?> globalExceptionHandler(Exception exception) {
         exception.printStackTrace();
-        log.warn("GlobalExceptionHandler:{},Description:{}", exception.getClass(), UNKNOWN_EXCEPTION_MESSAGE);
+        log.error("GlobalExceptionHandler:{},Description:{}", exception.getClass(), UNKNOWN_EXCEPTION_MESSAGE);
         return R.failure(RCodeEnum.SYSTEM_UNKNOWN_EXCEPTION);
     }
 
@@ -44,7 +45,7 @@ public class GlobalExceptionHandler {
      * @return 返回处理结果
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public R methodArgumentTypeMismatchException(MethodArgumentTypeMismatchException exception) {
+    public R<?> methodArgumentTypeMismatchException(MethodArgumentTypeMismatchException exception) {
         String message = exception.getMessage();
         if (StringUtils.isEmpty(message)) {
             return globalExceptionHandler(exception);
@@ -52,29 +53,47 @@ public class GlobalExceptionHandler {
         if (message.contains("Failed to convert value of type")
                 && message.contains("to required type")
                 && message.contains("nested exception is")) {
-            exception.printStackTrace();
-            log.warn("MethodArgumentTypeMismatchException:{},Description:{}", exception.getClass(), message);
+//            exception.printStackTrace();
+            log.error("MethodArgumentTypeMismatchException:{},Description:{}", exception.getClass(), message);
             return R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH);
         }
         return globalExceptionHandler(exception);
     }
 
     /**
-     * 特定异常处理器，POST请求未带有请求体问题
+     * 特定异常处理器：POST请求未带有请求体问题
      *
      * @param exception 特定异常
      * @return 返回处理结果
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public R httpMessageNotReadableExceptionHandler(HttpMessageNotReadableException exception) {
+    public R<?> httpMessageNotReadableExceptionHandler(HttpMessageNotReadableException exception) {
         String message = exception.getMessage();
         if (StringUtils.isEmpty(message)) {
             return globalExceptionHandler(exception);
         }
         if (message.contains("Required request body is missing:")) {
-            exception.printStackTrace();
-            log.warn("HttpMessageNotReadableException:{},Description:{}", message, message);
+//            exception.printStackTrace();
+            log.error("HttpMessageNotReadableException:{},Description:{}", message, message);
             return R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY);
+        }
+        return globalExceptionHandler(exception);
+    }
+
+    /**
+     * 特定异常处理器：REST请求方式有误
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public R<?> httpRequestMethodNotSupportedExceptionHandler(HttpRequestMethodNotSupportedException exception) {
+        String message = exception.getMessage();
+        if (StringUtils.isEmpty(message)) {
+            return globalExceptionHandler(exception);
+        }
+        if (message.contains("Request method")
+                && message.contains("not supported")) {
+//            exception.printStackTrace();
+            log.error("HttpRequestMethodNotSupportedException:{},Description:{}", message, message);
+            return R.failure(RCodeEnum.REST_REQUEST_IS_DONE_IN_THE_WRONG_WAY);
         }
         return globalExceptionHandler(exception);
     }
@@ -86,9 +105,9 @@ public class GlobalExceptionHandler {
      * @return 返回处理结果
      */
     @ExceptionHandler(value = {CustomizeReturnException.class})
-    public R returnExceptionHandler(CustomizeReturnException exception) {
-        exception.printStackTrace();
-        log.warn("CustomizeReturnException:{},Description:{}", CustomizeReturnException.class, exception.getDescription());
+    public R<?> returnExceptionHandler(CustomizeReturnException exception) {
+//        exception.printStackTrace();
+        log.error("CustomizeReturnException:{},Description:{}", CustomizeReturnException.class, exception.getDescription());
         return exception.getFailure();
     }
 
@@ -100,8 +119,8 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(value = {CustomizeTransactionException.class})
     public R<String> returnTransactionExceptionHandler(CustomizeTransactionException exception) {
-        exception.printStackTrace();
-        log.warn("CustomizeTransactionException:{},Description:{}", CustomizeReturnException.class, exception.getDescription());
+//        exception.printStackTrace();
+        log.error("CustomizeTransactionException:{},Description:{}", CustomizeReturnException.class, exception.getDescription());
         return exception.getFailure();
     }
 
@@ -112,9 +131,9 @@ public class GlobalExceptionHandler {
      * @return 返回处理结果
      */
     @ExceptionHandler(value = {CustomizeFileException.class})
-    public R returnFileExceptionHandler(CustomizeFileException exception) {
-        exception.printStackTrace();
-        log.warn("CustomizeFileException:{},Description:{}", CustomizeReturnException.class, exception.getDescription());
+    public R<?> returnFileExceptionHandler(CustomizeFileException exception) {
+//        exception.printStackTrace();
+        log.error("CustomizeFileException:{},Description:{}", CustomizeReturnException.class, exception.getDescription());
         return exception.getFailure();
     }
 }

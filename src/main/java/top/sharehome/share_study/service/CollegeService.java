@@ -2,15 +2,18 @@ package top.sharehome.share_study.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import top.sharehome.share_study.model.dto.CollegeGetDto;
-import top.sharehome.share_study.model.dto.CollegePageDto;
+import top.sharehome.share_study.model.dto.college.CollegeGetDto;
+import top.sharehome.share_study.model.dto.college.CollegePageDto;
+import top.sharehome.share_study.model.dto.tag.TagGetDto;
 import top.sharehome.share_study.model.entity.College;
-import top.sharehome.share_study.model.vo.CollegeAddVo;
-import top.sharehome.share_study.model.vo.CollegePageVo;
-import top.sharehome.share_study.model.vo.CollegeUpdateVo;
+import top.sharehome.share_study.model.vo.college.CollegeAddVo;
+import top.sharehome.share_study.model.vo.college.CollegePageVo;
+import top.sharehome.share_study.model.vo.college.CollegeUpdateVo;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 高校Service
@@ -53,17 +56,19 @@ public interface CollegeService extends IService<College> {
      *
      * @param current       当前页
      * @param pageSize      页面条数
+     * @param request       获取session对象
      * @param collegePageVo 高校分页Vo对象
      * @return 返回分页结果
      */
-    Page<CollegePageDto> pageCollege(Integer current, Integer pageSize, CollegePageVo collegePageVo);
+    Page<CollegePageDto> pageCollege(Integer current, Integer pageSize, HttpServletRequest request
+            , CollegePageVo collegePageVo);
 
     /**
      * 批量删除高校
      *
      * @param ids 需要批量删除的高校id
      */
-    void deleteBath(List<Long> ids);
+    void deleteBatch(List<Long> ids);
 
     /**
      * 高校信息导出
@@ -78,4 +83,19 @@ public interface CollegeService extends IService<College> {
      * @return 高校名称List
      */
     List<CollegeGetDto> listCollege();
+
+    /**
+     * 带有老师的高校ID和对应名称的List
+     *
+     * @return 高校名称List
+     */
+    Map<CollegeGetDto,List<TagGetDto>> mapCollegeContainTeacher();
+
+    /**
+     * 带有资料标签的高校ID和对应名称的List
+     *
+     * @return 高校名称List
+     */
+    Map<CollegeGetDto,List<TagGetDto>> mapCollegeContainTag();
+
 }

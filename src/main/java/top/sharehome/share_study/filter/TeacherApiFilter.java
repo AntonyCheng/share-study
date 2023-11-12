@@ -6,7 +6,7 @@ import org.springframework.util.AntPathMatcher;
 import top.sharehome.share_study.common.constant.CommonConstant;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
-import top.sharehome.share_study.model.dto.TeacherLoginDto;
+import top.sharehome.share_study.model.dto.teacher.TeacherLoginDto;
 
 import javax.servlet.*;
 import javax.servlet.annotation.WebFilter;

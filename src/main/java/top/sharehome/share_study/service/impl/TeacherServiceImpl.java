@@ -10,7 +10,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.sharehome.share_study.common.constant.CommonConstant;
@@ -20,18 +19,31 @@ import top.sharehome.share_study.common.exception_handler.customize.CustomizeTra
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
 import top.sharehome.share_study.mapper.*;
-import top.sharehome.share_study.model.dto.*;
+import top.sharehome.share_study.model.dto.admin.AdminGetDto;
+import top.sharehome.share_study.model.dto.admin.AdminGetSelfDto;
+import top.sharehome.share_study.model.dto.admin.AdminPageDto;
+import top.sharehome.share_study.model.dto.teacher.TeacherGetDto;
+import top.sharehome.share_study.model.dto.teacher.TeacherLoginDto;
+import top.sharehome.share_study.model.dto.teacher.TeacherPageDto;
+import top.sharehome.share_study.model.dto.user.UserGetInfoDto;
 import top.sharehome.share_study.model.entity.*;
-import top.sharehome.share_study.model.vo.*;
+import top.sharehome.share_study.model.vo.admin.AdminPageVo;
+import top.sharehome.share_study.model.vo.admin.AdminUpdateSelfVo;
+import top.sharehome.share_study.model.vo.admin.AdminUpdateVo;
+import top.sharehome.share_study.model.vo.teacher.TeacherLoginVo;
+import top.sharehome.share_study.model.vo.teacher.TeacherPageVo;
+import top.sharehome.share_study.model.vo.teacher.TeacherRegisterVo;
+import top.sharehome.share_study.model.vo.teacher.TeacherUpdateVo;
+import top.sharehome.share_study.model.vo.user.UserUpdateInfoSelfVo;
 import top.sharehome.share_study.service.FileOssService;
 import top.sharehome.share_study.service.TeacherService;
+import top.sharehome.share_study.utils.object.ObjectDataUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -55,6 +67,8 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     private FileOssService fileOssService;
     @javax.annotation.Resource
     private CollectMapper collectMapper;
+    @javax.annotation.Resource
+    private ResourceCensorMapper resourceCensorMapper;
 
     /**
      * 注册加盐
@@ -72,12 +86,9 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             throw new CustomizeReturnException(R.failure(RCodeEnum.USERNAME_ALREADY_EXISTS), "数据库中已经包含该用户：" + teacherRegisterVo.getAccount());
         }
 
-        // 查询用户输入的院校代码存不存在
-        LambdaQueryWrapper<College> collegeLambdaQueryWrapper = new LambdaQueryWrapper<>();
-        collegeLambdaQueryWrapper.eq(College::getCode, teacherRegisterVo.getCode());
-        College resultCollege = collegeMapper.selectOne(collegeLambdaQueryWrapper);
+        College resultCollege = collegeMapper.selectById(teacherRegisterVo.getBelong());
         if (resultCollege == null) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "没有该院校代码");
+            throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "没有该院校");
         }
 
         // 进行数据拷贝和插入
@@ -450,6 +461,10 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         List<Resource> resourceList = resourceMapper.selectList(resourceLambdaQueryWrapper);
         resourceMapper.delete(resourceLambdaQueryWrapper);
 
+        LambdaQueryWrapper<ResourceCensor> resourceCensorLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        resourceCensorLambdaQueryWrapper.eq(ResourceCensor::getBelong, id);
+        resourceCensorMapper.delete(resourceCensorLambdaQueryWrapper);
+
         LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
         commentLambdaQueryWrapper.eq(Comment::getBelong, id);
         commentMapper.delete(commentLambdaQueryWrapper);
@@ -600,15 +615,21 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         LambdaQueryWrapper<Teacher> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper
                 .orderByDesc(Teacher::getRole)
-                .orderByAsc(Teacher::getCreateTime);
+                .orderByDesc(Teacher::getScore)
+                .orderByDesc(Teacher::getCreateTime);
 
         // 当不存在模糊查询时的分页操作
-        if (teacherPageVo == null) {
+        if (ObjectDataUtil.isAllObjectDataEmpty(teacherPageVo)) {
             this.page(page, lambdaQueryWrapper);
             BeanUtils.copyProperties(page, returnResult, "records");
             List<TeacherPageDto> pageDtoList = page.getRecords().stream().map(teacher -> {
                 TeacherPageDto teacherPageDto = new TeacherPageDto();
                 BeanUtils.copyProperties(teacher, teacherPageDto);
+                College college = collegeMapper.selectById(teacher.getBelong());
+                if (college == null) {
+                    throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "该管理员所属高校不存在");
+                }
+                teacherPageDto.setBelongName(college.getName());
                 return teacherPageDto;
             }).collect(Collectors.toList());
             returnResult.setRecords(pageDtoList);
@@ -622,40 +643,37 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
                 .like(!ObjectUtils.isEmpty(teacherPageVo.getGender()), Teacher::getGender, teacherPageVo.getGender())
                 .like(!ObjectUtils.isEmpty(teacherPageVo.getStatus()), Teacher::getStatus, teacherPageVo.getStatus())
                 .like(!ObjectUtils.isEmpty(teacherPageVo.getRole()), Teacher::getRole, teacherPageVo.getRole());
-        this.page(page, lambdaQueryWrapper);
-        BeanUtils.copyProperties(page, returnResult, "records");
 
         String belongName = teacherPageVo.getBelongName();
-        List<Long> collegeIds = new ArrayList<>();
+        List<Long> collegeIds = null;
         if (!StringUtils.isEmpty(belongName)) {
             LambdaQueryWrapper<College> belongNameLambdaQueryWrapper = new LambdaQueryWrapper<>();
             belongNameLambdaQueryWrapper.like(College::getName, belongName);
             List<College> teachers = collegeMapper.selectList(belongNameLambdaQueryWrapper);
             collegeIds = teachers.stream().map(College::getId).collect(Collectors.toList());
         }
-        List<Long> finalCollegeIds = collegeIds;
 
-        if (finalCollegeIds.isEmpty()) {
-            page.setRecords(new ArrayList<>());
+        List<Long> finalCollegeIds = collegeIds;
+        if (!(!Objects.isNull(finalCollegeIds) && finalCollegeIds.isEmpty())) {
+            if (!Objects.isNull(finalCollegeIds) && !finalCollegeIds.isEmpty()) {
+                lambdaQueryWrapper
+                        .in(Teacher::getBelong, finalCollegeIds);
+            }
+            this.page(page, lambdaQueryWrapper);
         }
 
+        BeanUtils.copyProperties(page, returnResult, "records");
+
         List<TeacherPageDto> pageDtoList = page.getRecords().stream().map(teacher -> {
-            if (!finalCollegeIds.isEmpty() && !finalCollegeIds.contains(teacher.getBelong())) {
-                return null;
-            }
             TeacherPageDto teacherPageDto = new TeacherPageDto();
             BeanUtils.copyProperties(teacher, teacherPageDto);
-            LambdaQueryWrapper<College> collegeLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            collegeLambdaQueryWrapper.eq(College::getId, teacher.getBelong());
-            College college = collegeMapper.selectOne(collegeLambdaQueryWrapper);
+            College college = collegeMapper.selectById(teacher.getBelong());
             if (college == null) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "该管理员所属高校不存在");
             }
             teacherPageDto.setBelongName(college.getName());
             return teacherPageDto;
         }).collect(Collectors.toList());
-        pageDtoList.removeIf(Objects::isNull);
-        returnResult.setTotal(pageDtoList.size());
         returnResult.setRecords(pageDtoList);
         return returnResult;
     }
@@ -811,28 +829,39 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
 
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
-    public Page<AdminPageDto> pageAdmin(Integer current, Integer pageSize, AdminPageVo adminPageVo) {
+    public Page<AdminPageDto> pageAdmin(Integer current, Integer pageSize, HttpServletRequest request, AdminPageVo adminPageVo) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，管理员未登录");
+        }
         // 创建原始分页数据以及返回分页数据
         Page<Teacher> page = new Page<>(current, pageSize);
         Page<AdminPageDto> returnResult = new Page<>(current, pageSize);
 
         // 过滤分页对象
         LambdaQueryWrapper<Teacher> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+
         lambdaQueryWrapper
-                .eq(Teacher::getRole, CommonConstant.ADMIN_ROLE)
-                .or()
-                .eq(Teacher::getRole, CommonConstant.SUPER_ROLE);
+                .and(condition -> {
+                    condition.eq(Teacher::getRole, CommonConstant.ADMIN_ROLE)
+                            .or()
+                            .eq(Teacher::getRole, CommonConstant.SUPER_ROLE);
+                })
+                .orderByDesc(Teacher::getRole)
+                .orderByDesc(Teacher::getCreateTime);
 
         // 当不存在模糊查询时的分页操作
-        if (adminPageVo == null) {
-            lambdaQueryWrapper
-                    .orderByDesc(Teacher::getRole)
-                    .orderByAsc(Teacher::getCreateTime);
+        if (ObjectDataUtil.isAllObjectDataEmpty(adminPageVo)) {
             this.page(page, lambdaQueryWrapper);
             BeanUtils.copyProperties(page, returnResult, "records");
             List<AdminPageDto> pageDtoList = page.getRecords().stream().map(teacher -> {
                 AdminPageDto adminPageDto = new AdminPageDto();
                 BeanUtils.copyProperties(teacher, adminPageDto);
+                College college = collegeMapper.selectById(teacher.getBelong());
+                if (college == null) {
+                    throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "该管理员所属高校不存在");
+                }
+                adminPageDto.setBelongName(college.getName());
                 return adminPageDto;
             }).collect(Collectors.toList());
             returnResult.setRecords(pageDtoList);
@@ -845,43 +874,39 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
                 .like(!StringUtils.isEmpty(adminPageVo.getName()), Teacher::getName, adminPageVo.getName())
                 .like(!ObjectUtils.isEmpty(adminPageVo.getGender()), Teacher::getGender, adminPageVo.getGender())
                 .like(!ObjectUtils.isEmpty(adminPageVo.getStatus()), Teacher::getStatus, adminPageVo.getStatus())
-                .like(!ObjectUtils.isEmpty(adminPageVo.getRole()), Teacher::getRole, adminPageVo.getRole())
-                .orderByDesc(Teacher::getRole)
-                .orderByAsc(Teacher::getCreateTime);
-        this.page(page, lambdaQueryWrapper);
-        BeanUtils.copyProperties(page, returnResult, "records");
+                .like(!ObjectUtils.isEmpty(adminPageVo.getRole()), Teacher::getRole, adminPageVo.getRole());
 
         String belongName = adminPageVo.getBelongName();
-        List<Long> collegeIds = new ArrayList<>();
+        List<Long> collegeIds = null;
         if (!StringUtils.isEmpty(belongName)) {
             LambdaQueryWrapper<College> belongNameLambdaQueryWrapper = new LambdaQueryWrapper<>();
             belongNameLambdaQueryWrapper.like(College::getName, belongName);
             List<College> teachers = collegeMapper.selectList(belongNameLambdaQueryWrapper);
             collegeIds = teachers.stream().map(College::getId).collect(Collectors.toList());
         }
+
         List<Long> finalCollegeIds = collegeIds;
 
-        if (finalCollegeIds.isEmpty()) {
-            page.setRecords(new ArrayList<>());
+        if (!(!Objects.isNull(finalCollegeIds) && finalCollegeIds.isEmpty())) {
+            if (!Objects.isNull(finalCollegeIds)) {
+                lambdaQueryWrapper
+                        .in(Teacher::getBelong, finalCollegeIds);
+            }
+            this.page(page, lambdaQueryWrapper);
         }
 
+        BeanUtils.copyProperties(page, returnResult, "records");
+
         List<AdminPageDto> pageDtoList = page.getRecords().stream().map(teacher -> {
-            if (!finalCollegeIds.isEmpty() && !finalCollegeIds.contains(teacher.getBelong())) {
-                return null;
-            }
             AdminPageDto adminPageDto = new AdminPageDto();
             BeanUtils.copyProperties(teacher, adminPageDto);
-            LambdaQueryWrapper<College> collegeLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            collegeLambdaQueryWrapper.eq(College::getId, teacher.getBelong());
-            College college = collegeMapper.selectOne(collegeLambdaQueryWrapper);
+            College college = collegeMapper.selectById(teacher.getBelong());
             if (college == null) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.COLLEGE_NOT_EXISTS), "该管理员所属高校不存在");
             }
             adminPageDto.setBelongName(college.getName());
             return adminPageDto;
         }).collect(Collectors.toList());
-        pageDtoList.removeIf(Objects::isNull);
-        returnResult.setTotal(pageDtoList.size());
         returnResult.setRecords(pageDtoList);
         return returnResult;
     }

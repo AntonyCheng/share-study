@@ -5,14 +5,16 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.web.bind.annotation.*;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
-import top.sharehome.share_study.model.dto.CommentGetDto;
-import top.sharehome.share_study.model.dto.CommentPageDto;
-import top.sharehome.share_study.model.vo.CommentPageVo;
-import top.sharehome.share_study.model.vo.CommentUpdateVo;
+import top.sharehome.share_study.model.dto.comment.CommentGetDto;
+import top.sharehome.share_study.model.dto.comment.CommentPageDto;
+import top.sharehome.share_study.model.vo.comment.CommentPageVo;
+import top.sharehome.share_study.model.vo.comment.CommentUpdateVo;
 import top.sharehome.share_study.service.CommentService;
 
 import javax.annotation.Resource;
@@ -29,6 +31,7 @@ import java.util.List;
 @RequestMapping("/comment")
 @Api(tags = "评论交流相关接口")
 @CrossOrigin
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class CommentController {
     @Resource
     private CommentService commentService;
@@ -141,9 +144,9 @@ public class CommentController {
      * @param commentPageVo 交流评论分页Vo对象
      * @return 返回分页结果
      */
-    @PostMapping("/page/{current}/{pageSize}")
+    @GetMapping("/page/{current}/{pageSize}")
     @ApiOperation("交流评论分页查询接口")
-    public R<Page<CommentPageDto>> page(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, @ApiParam(name = "commentPageVo", value = "评论交流分页Vo对象", required = true) @RequestBody(required = false) CommentPageVo commentPageVo) {
+    public R<Page<CommentPageDto>> page(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize,HttpServletRequest request, @ApiParam(name = "commentPageVo", value = "评论交流分页Vo对象", required = true) CommentPageVo commentPageVo) {
         // 判空
         if (ObjectUtils.isEmpty(current) || ObjectUtils.isEmpty(pageSize)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "分页参数为空");
@@ -154,7 +157,7 @@ public class CommentController {
             throw new CustomizeReturnException(R.failure(RCodeEnum.PARAMETER_FORMAT_MISMATCH), "分页参数格式错误");
         }
 
-        Page<CommentPageDto> page = commentService.pageComment(current, pageSize, commentPageVo);
+        Page<CommentPageDto> page = commentService.pageComment(current, pageSize,request,commentPageVo);
 
         return R.success(page, "分页查询成功");
     }

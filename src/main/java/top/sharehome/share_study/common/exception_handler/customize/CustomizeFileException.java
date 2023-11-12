@@ -1,6 +1,7 @@
 package top.sharehome.share_study.common.exception_handler.customize;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import top.sharehome.share_study.common.response.R;
 
 /**
@@ -9,9 +10,10 @@ import top.sharehome.share_study.common.response.R;
  * @author AntonyCheng
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class CustomizeFileException extends RuntimeException {
     private String description;
-    private R failure;
+    private R<?> failure;
 
     public <T> CustomizeFileException(R<T> failure) {
         this.failure = failure;
@@ -23,3 +25,5 @@ public class CustomizeFileException extends RuntimeException {
         this.description = description;
     }
 }
+
+

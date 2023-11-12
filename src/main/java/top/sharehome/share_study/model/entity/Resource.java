@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 public class Resource implements Serializable {
 
     private static final long serialVersionUID = 1683058685207781686L;
+
     /**
      * 教学资料唯一ID
      */
@@ -76,11 +77,19 @@ public class Resource implements Serializable {
     private Integer score;
 
     /**
+     * 教学资料课程名称标签
+     */
+    @TableField(value = "resource_tags")
+    @ApiModelProperty(value = "教学资料课程名称标签")
+    @ExcelProperty(value = "教学资料课程名称标签", index = 6)
+    private String tags;
+
+    /**
      * 教学资料状态（0表示正常，1表示封禁）
      */
     @TableField(value = "resource_status", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "教学资料状态（0表示正常，1表示封禁）")
-    @ExcelProperty(value = "教学资料状态", index = 6, converter = ExcelIntegerConverter.class)
+    @ExcelProperty(value = "教学资料状态", index = 7, converter = ExcelIntegerConverter.class)
     private Integer status;
 
     /**
@@ -88,7 +97,7 @@ public class Resource implements Serializable {
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "教学资料发布时间")
-    @ExcelProperty(value = "教学资料发布时间", index = 7, converter = ExcelLocalDateTimeConverter.class)
+    @ExcelProperty(value = "教学资料发布时间", index = 8, converter = ExcelLocalDateTimeConverter.class)
     private LocalDateTime createTime;
 
     /**
@@ -96,7 +105,7 @@ public class Resource implements Serializable {
      */
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     @ApiModelProperty(value = "教学资料修改时间")
-    @ExcelProperty(value = "教学资料修改时间", index = 8, converter = ExcelLocalDateTimeConverter.class)
+    @ExcelProperty(value = "教学资料修改时间", index = 9, converter = ExcelLocalDateTimeConverter.class)
     private LocalDateTime updateTime;
 
     /**
@@ -105,7 +114,7 @@ public class Resource implements Serializable {
     @TableField(value = "is_deleted", fill = FieldFill.INSERT)
     @ApiModelProperty(value = "逻辑删除（0表示未删除，1表示已删除）")
     @TableLogic
-    @ExcelProperty(value = "逻辑删除", index = 9, converter = ExcelIntegerConverter.class)
+    @ExcelProperty(value = "逻辑删除", index = 10, converter = ExcelIntegerConverter.class)
     private Integer isDeleted;
 
     public static final String COL_RESOURCE_ID = "resource_id";
@@ -117,6 +126,10 @@ public class Resource implements Serializable {
     public static final String COL_RESOURCE_INFO = "resource_info";
 
     public static final String COL_RESOURCE_URL = "resource_url";
+
+    public static final String COL_RESOURCE_SCORE = "resource_score";
+
+    public static final String COL_RESOURCE_TAGS = "resource_tags";
 
     public static final String COL_RESOURCE_STATUS = "resource_status";
 

@@ -18,19 +18,19 @@ public enum RCodeEnum {
     SUCCESS("00000", "请求正常响应"),
 
     /**
-     * 用户名校验失败 A0110
+     * 账户名称校验失败 A0110
      */
-    USERNAME_VALIDATION_FAILED("A0110", "用户名校验失败"),
+    USERNAME_VALIDATION_FAILED("A0110", "账户名称校验失败"),
 
     /**
-     * 用户名已经存在 A0111
+     * 账户名称已经存在 A0111
      */
-    USERNAME_ALREADY_EXISTS("A0111", "用户名已经存在"),
+    USERNAME_ALREADY_EXISTS("A0111", "账户名称已经存在"),
 
     /**
-     * 用户名包含特殊字符 A0113
+     * 账户名称包含特殊字符 A0113
      */
-    USERNAME_CONTAINS_SPECIAL_CHARACTERS("A0113", "用户名包含特殊字符"),
+    USERNAME_CONTAINS_SPECIAL_CHARACTERS("A0113", "账户名称包含特殊字符"),
 
     /**
      * 密码校验失败 A0120
@@ -259,9 +259,74 @@ public enum RCodeEnum {
     COMMENT_NOT_EXISTS("D0121", "交流评论不存在"),
 
     /**
+     * 消息队列消息投放出错 D0122
+     */
+    MESSAGE_QUEUE_SEND_ERROR("D0122", "消息队列消息投放出错"),
+
+    /**
+     * 用户上传源代码太大 D0123
+     */
+    USER_UPLOADED_CODE_IS_TOO_LARGE("D0123", "用户上传源代码太大"),
+
+    /**
+     * 消息队列从提供者到交换机 D0124
+     */
+    PROVIDER_TO_EXCHANGE_ERROR("D0124", "消息队列：提供者到交换机出错"),
+
+    /**
+     * 消息队列从提供者到交换机 D0125
+     */
+    EXCHANGE_TO_QUEUE_ERROR("D0125", "消息队列：交换机到队列出错"),
+
+    /**
+     * 该资料审核已结束 D0126
+     */
+    CENSOR_OF_INFORMATION_HAS_BEEN_COMPLETED("D0126", "该资料审核已结束"),
+
+    /**
+     * 重复审核 D0127
+     */
+    CENSOR_REPEAT("D0127", "重复审核"),
+
+    /**
+     * 审核数据错误 D0128
+     */
+    CENSOR_DATA_ERRORS("D0128", "审核数据错误"),
+
+    /**
+     * 审核未通过 D0129
+     */
+    CENSOR_NOT_PASS("D0129", "审核未通过"),
+
+    /**
+     * 审核重复发布 D0130
+     */
+    CENSOR_DUPLICATE_RELEASES("D0130", "审核重复发布"),
+
+    /**
+     * 审核未完成 D0131
+     */
+    CENSOR_DID_NOT_COMPLETE("D0131", "审核未完成"),
+
+    /**
+     * 资料标签不存在 D0132
+     */
+    TAG_NOT_EXISTS("D0132", "资料标签不存在"),
+
+    /**
+     * 标签下还绑定着资料 D0133
+     */
+    TAG_BIND_RESOURCE("D0133", "标签下还绑定着资料"),
+
+    /**
+     * REST请求方式有误 D0134
+     */
+    REST_REQUEST_IS_DONE_IN_THE_WRONG_WAY("D0134", "REST请求方式有误"),
+
+    /**
      * 系统未知异常 Z0000
      */
-    SYSTEM_UNKNOWN_EXCEPTION("Z0000", "系统未知异常");
+    SYSTEM_UNKNOWN_EXCEPTION("Z0000","系统未知异常");
 
 
     /**

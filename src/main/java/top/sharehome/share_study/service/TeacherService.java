@@ -2,9 +2,22 @@ package top.sharehome.share_study.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import top.sharehome.share_study.model.dto.*;
+import top.sharehome.share_study.model.dto.admin.AdminGetDto;
+import top.sharehome.share_study.model.dto.admin.AdminGetSelfDto;
+import top.sharehome.share_study.model.dto.admin.AdminPageDto;
+import top.sharehome.share_study.model.dto.teacher.TeacherGetDto;
+import top.sharehome.share_study.model.dto.teacher.TeacherLoginDto;
+import top.sharehome.share_study.model.dto.teacher.TeacherPageDto;
+import top.sharehome.share_study.model.dto.user.UserGetInfoDto;
 import top.sharehome.share_study.model.entity.Teacher;
-import top.sharehome.share_study.model.vo.*;
+import top.sharehome.share_study.model.vo.admin.AdminPageVo;
+import top.sharehome.share_study.model.vo.admin.AdminUpdateSelfVo;
+import top.sharehome.share_study.model.vo.admin.AdminUpdateVo;
+import top.sharehome.share_study.model.vo.teacher.TeacherLoginVo;
+import top.sharehome.share_study.model.vo.teacher.TeacherPageVo;
+import top.sharehome.share_study.model.vo.teacher.TeacherRegisterVo;
+import top.sharehome.share_study.model.vo.teacher.TeacherUpdateVo;
+import top.sharehome.share_study.model.vo.user.UserUpdateInfoSelfVo;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -83,7 +96,7 @@ public interface TeacherService extends IService<Teacher> {
      * @param adminPageVo 管理员分页Vo对象
      * @return 返回分页结果
      */
-    Page<AdminPageDto> pageAdmin(Integer current, Integer pageSize, AdminPageVo adminPageVo);
+    Page<AdminPageDto> pageAdmin(Integer current, Integer pageSize, HttpServletRequest request, AdminPageVo adminPageVo);
 
     /**
      * 管理员信息导出

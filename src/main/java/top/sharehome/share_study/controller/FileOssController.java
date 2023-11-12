@@ -2,6 +2,8 @@ package top.sharehome.share_study.controller;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
@@ -23,6 +25,7 @@ import java.util.List;
 @Api(tags = "OSS文件上传/下载功能相关接口")
 @RequestMapping("/file")
 @CrossOrigin
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class FileOssController {
     @Resource
     private FileOssService fileOssService;
@@ -34,10 +37,11 @@ public class FileOssController {
      * 其他文件可以通过的文件格式
      */
     private static final List<String> FILE_FORMATS = new ArrayList<>(Arrays.asList(
-            "png", "jpg", "jpeg", "pdf",
+            "png", "jpg", "jpeg", "gif", "pdf",
             "xlsx", "xls", "doc", "docx",
             "ppt", "pptx", "mp3", "mp4", "mpeg",
-            "zip", "rar", "7z", "gif"));
+            "zip", "rar", "7z",
+            "py", "java", "c", "cpp", "go", "html", "js", "ts", "sql", "css"));
 
     /**
      * 头像文件上传（无需权限）
@@ -91,6 +95,11 @@ public class FileOssController {
             throw new CustomizeReturnException(R.failure(RCodeEnum.USER_UPLOADED_FILE_TYPE_MISMATCH));
         }
         long size = file.getSize();
+        if (Arrays.asList("py", "java", "c", "cpp", "go", "html", "js", "ts", "sql", "css").contains(suffix)) {
+            if (size / 1024 >= 100) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.USER_UPLOADED_CODE_IS_TOO_LARGE));
+            }
+        }
         if (Arrays.asList("png", "jpg", "jpeg", "gif").contains(suffix)) {
             if (size / 1024 / 1024 >= 5) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.USER_UPLOADED_IMAGE_IS_TOO_LARGE));
@@ -101,8 +110,13 @@ public class FileOssController {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.USER_UPLOADED_FILE_IS_TOO_LARGE));
             }
         }
-        if (Arrays.asList("mp3", "mp4", "zip", "rar", "7z").contains(suffix)) {
-            if (size / 1024 / 1024 >= 200) {
+        if (Arrays.asList("mp3", "mp4").contains(suffix)) {
+            if (size / 1024 / 1024 >= 100) {
+                throw new CustomizeReturnException(R.failure(RCodeEnum.USER_UPLOADED_VIDEO_IS_TOO_LARGE));
+            }
+        }
+        if (Arrays.asList("rar", "7z", "zip").contains(suffix)) {
+            if (size / 1024 / 1024 >= 100) {
                 throw new CustomizeReturnException(R.failure(RCodeEnum.USER_UPLOADED_VIDEO_IS_TOO_LARGE));
             }
         }

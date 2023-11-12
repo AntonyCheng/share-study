@@ -7,19 +7,21 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.web.bind.annotation.*;
 import top.sharehome.share_study.common.constant.CommonConstant;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
-import top.sharehome.share_study.model.dto.AdminGetDto;
-import top.sharehome.share_study.model.dto.AdminGetSelfDto;
-import top.sharehome.share_study.model.dto.AdminPageDto;
-import top.sharehome.share_study.model.dto.TeacherLoginDto;
-import top.sharehome.share_study.model.vo.AdminPageVo;
-import top.sharehome.share_study.model.vo.AdminUpdateSelfVo;
-import top.sharehome.share_study.model.vo.AdminUpdateVo;
-import top.sharehome.share_study.model.vo.TeacherLoginVo;
+import top.sharehome.share_study.model.dto.admin.AdminGetDto;
+import top.sharehome.share_study.model.dto.admin.AdminGetSelfDto;
+import top.sharehome.share_study.model.dto.admin.AdminPageDto;
+import top.sharehome.share_study.model.dto.teacher.TeacherLoginDto;
+import top.sharehome.share_study.model.vo.admin.AdminPageVo;
+import top.sharehome.share_study.model.vo.admin.AdminUpdateSelfVo;
+import top.sharehome.share_study.model.vo.admin.AdminUpdateVo;
+import top.sharehome.share_study.model.vo.teacher.TeacherLoginVo;
 import top.sharehome.share_study.service.TeacherService;
 
 import javax.annotation.Resource;
@@ -36,6 +38,7 @@ import javax.servlet.http.HttpSession;
 @RequestMapping("/admin")
 @Api(tags = "管理员用户相关接口")
 @CrossOrigin
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class AdminController {
     @Resource
     private TeacherService teacherService;
@@ -272,9 +275,9 @@ public class AdminController {
      * @param adminPageVo 管理员分页Vo对象
      * @return 返回分页结果
      */
-    @PostMapping("/page/{current}/{pageSize}")
+    @GetMapping("/page/{current}/{pageSize}")
     @ApiOperation("管理员分页查询接口")
-    public R<Page<AdminPageDto>> page(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, @ApiParam(name = "adminPageVo", value = "管理员分页Vo对象", required = true) @RequestBody(required = false) AdminPageVo adminPageVo) {
+    public R<Page<AdminPageDto>> pageAdmin(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, HttpServletRequest request, @ApiParam(name = "adminPageVo", value = "管理员分页Vo对象", required = true) AdminPageVo adminPageVo) {
         // 判空
         if (ObjectUtils.isEmpty(current) || ObjectUtils.isEmpty(pageSize)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "分页参数为空");
@@ -286,7 +289,7 @@ public class AdminController {
         }
 
         // 执行管理员信息分页操作
-        Page<AdminPageDto> page = teacherService.pageAdmin(current, pageSize, adminPageVo);
+        Page<AdminPageDto> page = teacherService.pageAdmin(current, pageSize, request, adminPageVo);
 
         return R.success(page, "分页查询成功");
     }

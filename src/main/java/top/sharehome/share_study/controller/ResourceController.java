@@ -5,14 +5,16 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.web.bind.annotation.*;
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeReturnException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
-import top.sharehome.share_study.model.dto.ResourceGetDto;
-import top.sharehome.share_study.model.dto.ResourcePageDto;
-import top.sharehome.share_study.model.vo.ResourcePageVo;
-import top.sharehome.share_study.model.vo.ResourceUpdateVo;
+import top.sharehome.share_study.model.dto.resource.ResourceGetDto;
+import top.sharehome.share_study.model.dto.resource.ResourcePageDto;
+import top.sharehome.share_study.model.vo.resource.ResourcePageVo;
+import top.sharehome.share_study.model.vo.resource.ResourceUpdateVo;
 import top.sharehome.share_study.service.ResourceService;
 
 import javax.annotation.Resource;
@@ -29,6 +31,7 @@ import java.util.List;
 @RequestMapping("/resource")
 @Api(tags = "教学资料相关接口")
 @CrossOrigin
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ResourceController {
     @Resource
     private ResourceService resourceService;
@@ -92,7 +95,6 @@ public class ResourceController {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "教学资料ID为空");
         }
         ResourceGetDto resourceGetDto = resourceService.getResource(id, request);
-
         return R.success(resourceGetDto, "回显成功");
     }
 
@@ -131,9 +133,9 @@ public class ResourceController {
      * @param resourcePageVo 教学资料分页Vo对象
      * @return 返回分页结果
      */
-    @PostMapping("/page/{current}/{pageSize}")
+    @GetMapping("/page/{current}/{pageSize}")
     @ApiOperation("教学资料分页查询接口")
-    public R<Page<ResourcePageDto>> page(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, @ApiParam(name = "resourcePageVo", value = "教学资料分页Vo对象", required = true) @RequestBody(required = false) ResourcePageVo resourcePageVo) {
+    public R<Page<ResourcePageDto>> page(@PathVariable("current") Integer current, @PathVariable("pageSize") Integer pageSize, @ApiParam(name = "resourcePageVo", value = "教学资料分页Vo对象", required = true) ResourcePageVo resourcePageVo) {
 
         if (ObjectUtils.isEmpty(current) || ObjectUtils.isEmpty(pageSize)) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY), "分页参数为空");

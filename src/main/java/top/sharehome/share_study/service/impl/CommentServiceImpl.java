@@ -1,13 +1,20 @@
 package top.sharehome.share_study.service.impl;
 
 import com.alibaba.excel.EasyExcelFactory;
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.ReturnedMessage;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.sharehome.share_study.common.constant.CommonConstant;
@@ -16,19 +23,25 @@ import top.sharehome.share_study.common.exception_handler.customize.CustomizeRet
 import top.sharehome.share_study.common.exception_handler.customize.CustomizeTransactionException;
 import top.sharehome.share_study.common.response.R;
 import top.sharehome.share_study.common.response.RCodeEnum;
+import top.sharehome.share_study.config.RabbitMqConfig;
 import top.sharehome.share_study.mapper.CollegeMapper;
 import top.sharehome.share_study.mapper.CommentMapper;
 import top.sharehome.share_study.mapper.ResourceMapper;
 import top.sharehome.share_study.mapper.TeacherMapper;
-import top.sharehome.share_study.model.dto.*;
+import top.sharehome.share_study.model.dto.comment.CommentGetDto;
+import top.sharehome.share_study.model.dto.comment.CommentPageDto;
+import top.sharehome.share_study.model.dto.post.PostCommentPageDto;
+import top.sharehome.share_study.model.dto.teacher.TeacherLoginDto;
+import top.sharehome.share_study.model.dto.user.UserCommentPageDto;
 import top.sharehome.share_study.model.entity.College;
 import top.sharehome.share_study.model.entity.Comment;
 import top.sharehome.share_study.model.entity.Resource;
 import top.sharehome.share_study.model.entity.Teacher;
-import top.sharehome.share_study.model.vo.CommentPageVo;
-import top.sharehome.share_study.model.vo.CommentUpdateVo;
-import top.sharehome.share_study.model.vo.PostCommentAddVo;
+import top.sharehome.share_study.model.vo.comment.CommentPageVo;
+import top.sharehome.share_study.model.vo.comment.CommentUpdateVo;
+import top.sharehome.share_study.model.vo.post.PostCommentAddVo;
 import top.sharehome.share_study.service.CommentService;
+import top.sharehome.share_study.utils.object.ObjectDataUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -36,7 +49,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -47,6 +60,7 @@ import java.util.stream.Collectors;
  * @author AntonyCheng
  */
 @Service
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> implements CommentService {
     @javax.annotation.Resource
     private CommentMapper commentMapper;
@@ -59,6 +73,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
     @javax.annotation.Resource
     private CollegeMapper collegeMapper;
+
+    @javax.annotation.Resource(name = "noSingletonRabbitTemplate")
+    private RabbitTemplate commentRabbitTemplate;
 
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
@@ -166,12 +183,12 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "非管理员不能进行删除操作");
         }
 
-        LambdaQueryWrapper<Comment> resourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
-        resourceLambdaQueryWrapper.eq(Comment::getId, id);
+        LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        commentLambdaQueryWrapper.eq(Comment::getId, id);
 
-        Comment selectResult = commentMapper.selectOne(resourceLambdaQueryWrapper);
+        Comment selectResult = commentMapper.selectOne(commentLambdaQueryWrapper);
         if (selectResult == null) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.RESOURCE_NOT_EXISTS), "评论交流不存在，不需要进行下一步操作");
+            throw new CustomizeReturnException(R.failure(RCodeEnum.COMMENT_NOT_EXISTS), "交流评论不存在，不需要进行下一步操作");
         }
 
         Teacher targetTeacher = teacherMapper.selectById(selectResult.getBelong());
@@ -237,16 +254,50 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         if (updateResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "修改交流评论失败，从数据库返回的影响行数为0，且在之前没有报出异常");
         }
+
+        String operate = "管理员:" + teacherLoginDto.getName() + "(ID=" + teacherLoginDto.getId() + ")执行修改评论操作";
+        HashMap<String, Object> rabbitMqResult = new HashMap<>();
+        rabbitMqResult.put("operate", operate);
+        rabbitMqResult.put("object", resultFromDatabase);
+        rabbitMqResult.put("method", CommonConstant.UPDATE_COMMENT);
+        try {
+            commentRabbitTemplate.setConfirmCallback(new RabbitTemplate.ConfirmCallback() {
+                @Override
+                public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+                    if (!ack) {
+                        throw new CustomizeReturnException(R.failure(RCodeEnum.PROVIDER_TO_EXCHANGE_ERROR));
+                    }
+                }
+            });
+            commentRabbitTemplate.setReturnsCallback(new RabbitTemplate.ReturnsCallback() {
+                @Override
+                public void returnedMessage(ReturnedMessage returnedMessage) {
+                    log.error(returnedMessage.toString());
+                    throw new CustomizeReturnException(R.failure(RCodeEnum.EXCHANGE_TO_QUEUE_ERROR));
+                }
+            });
+
+            commentRabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, "comment." + CommonConstant.UPDATE_COMMENT, JSON.toJSONString(rabbitMqResult));
+        } catch (AmqpException exception) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.MESSAGE_QUEUE_SEND_ERROR));
+        }
     }
 
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
-    public Page<CommentPageDto> pageComment(Integer current, Integer pageSize, CommentPageVo commentPageVo) {
+    public Page<CommentPageDto> pageComment(Integer current, Integer pageSize, HttpServletRequest request, CommentPageVo commentPageVo) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，管理员未登录");
+        }
         Page<Comment> page = new Page<>(current, pageSize);
         Page<CommentPageDto> returnResult = new Page<>(current, pageSize);
+        LambdaQueryWrapper<Comment> commentLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        commentLambdaQueryWrapper
+                .orderByDesc(Comment::getCreateTime);
 
-        if (commentPageVo == null) {
-            this.page(page);
+        if (ObjectDataUtil.isAllObjectDataEmpty(commentPageVo)) {
+            this.page(page, commentLambdaQueryWrapper);
             BeanUtils.copyProperties(page, returnResult, "records");
             List<CommentPageDto> pageDtoList = page.getRecords().stream().map(comment -> {
                 CommentPageDto commentPageDto = new CommentPageDto();
@@ -256,40 +307,40 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 belongLambdaQueryWrapper.eq(Teacher::getId, comment.getBelong());
                 Teacher belong = teacherMapper.selectOne(belongLambdaQueryWrapper);
                 if (belong == null) {
-                    throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "发送者不存在");
+                    commentPageDto.setBelongName("用户不存在");
+                } else {
+                    commentPageDto.setBelongName(belong.getName());
                 }
-                commentPageDto.setBelongName(belong.getName());
 
                 LambdaQueryWrapper<Teacher> sendLambdaQueryWrapper = new LambdaQueryWrapper<>();
                 sendLambdaQueryWrapper.eq(Teacher::getId, comment.getSend());
                 Teacher send = teacherMapper.selectOne(sendLambdaQueryWrapper);
                 if (send == null) {
-                    throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS), "接收者不存在");
+                    commentPageDto.setSendName("用户不存在");
+                } else {
+                    commentPageDto.setSendName(send.getName());
                 }
-                commentPageDto.setSendName(send.getName());
 
-                LambdaQueryWrapper<Resource> resourceQueryWrapper = new LambdaQueryWrapper<>();
-                resourceQueryWrapper.eq(Resource::getId, comment.getResource());
-                Resource resource = resourceMapper.selectOne(resourceQueryWrapper);
-                if (resource == null) {
-                    throw new CustomizeReturnException(R.failure(RCodeEnum.RESOURCE_NOT_EXISTS), "教学资料不存在");
+                if (comment.getResource() != 0) {
+                    Resource resource = resourceMapper.selectById(comment.getResource());
+                    if (resource == null) {
+                        commentPageDto.setResourceName("教学资料不存在");
+                    } else {
+                        commentPageDto.setResourceName(resource.getName());
+                    }
+                } else {
+                    commentPageDto.setResourceName("系统消息");
                 }
-                commentPageDto.setResourceName(resource.getName());
-
                 return commentPageDto;
             }).collect(Collectors.toList());
             returnResult.setRecords(pageDtoList);
             return returnResult;
         }
 
-        LambdaQueryWrapper<Comment> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper
+        commentLambdaQueryWrapper
                 .like(!StringUtils.isEmpty(commentPageVo.getContent()), Comment::getContent, commentPageVo.getContent())
                 .like(!ObjectUtils.isEmpty(commentPageVo.getReadStatus()), Comment::getReadStatus, commentPageVo.getReadStatus())
-                .like(!ObjectUtils.isEmpty(commentPageVo.getStatus()), Comment::getStatus, commentPageVo.getStatus())
-                .orderByAsc(Comment::getCreateTime);
-        this.page(page, lambdaQueryWrapper);
-        BeanUtils.copyProperties(page, returnResult, "records");
+                .like(!ObjectUtils.isEmpty(commentPageVo.getStatus()), Comment::getStatus, commentPageVo.getStatus());
 
         String belongName = commentPageVo.getBelongName();
         List<Long> belongIds = null;
@@ -316,63 +367,64 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
             resourceIds = teachers.stream().map(Resource::getId).collect(Collectors.toList());
         }
 
-
-        if (belongIds != null && belongIds.isEmpty()) {
-            page.setRecords(new ArrayList<>());
-        }
-        if (sendIds != null && sendIds.isEmpty()) {
-            page.setRecords(new ArrayList<>());
-        }
-        if (resourceIds != null && resourceIds.isEmpty()) {
-            page.setRecords(new ArrayList<>());
-        }
-
         List<Long> finalBelongIds = belongIds;
         List<Long> finalSendIds = sendIds;
         List<Long> finalResourceIds = resourceIds;
 
-        List<CommentPageDto> pageDtoList = page.getRecords().stream().map(comment -> {
-            if (finalBelongIds != null && !finalBelongIds.isEmpty() && !finalBelongIds.contains(comment.getBelong())) {
-                return null;
+        if (!((!Objects.isNull(finalBelongIds) && finalBelongIds.isEmpty())
+                || (!Objects.isNull(finalSendIds) && finalSendIds.isEmpty())
+                || (!Objects.isNull(finalResourceIds) && finalResourceIds.isEmpty()))) {
+            if (!Objects.isNull(finalBelongIds) && !finalBelongIds.isEmpty()) {
+                commentLambdaQueryWrapper
+                        .in(Comment::getBelong, finalBelongIds);
             }
-            if (finalSendIds != null && !finalSendIds.isEmpty() && !finalSendIds.contains(comment.getSend())) {
-                return null;
+            if (!Objects.isNull(finalSendIds) && !finalSendIds.isEmpty()) {
+                commentLambdaQueryWrapper
+                        .in(Comment::getSend, finalSendIds);
             }
-            if (finalResourceIds != null && !finalResourceIds.isEmpty() && !finalResourceIds.contains(comment.getResource())) {
-                return null;
+            if (!Objects.isNull(finalResourceIds) && !finalResourceIds.isEmpty()) {
+                commentLambdaQueryWrapper
+                        .in(Comment::getResource, finalResourceIds);
             }
+            this.page(page, commentLambdaQueryWrapper);
+        }
 
+        BeanUtils.copyProperties(page, returnResult, "records");
+
+        List<CommentPageDto> pageDtoList = page.getRecords().stream().map(comment -> {
             CommentPageDto commentPageDto = new CommentPageDto();
             BeanUtils.copyProperties(comment, commentPageDto);
 
             LambdaQueryWrapper<Teacher> belongLambdaQueryWrapper = new LambdaQueryWrapper<>();
             belongLambdaQueryWrapper.eq(Teacher::getId, comment.getBelong());
-            Teacher belongTeacher = teacherMapper.selectOne(belongLambdaQueryWrapper);
-            if (belongTeacher == null) {
-                throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS));
+            Teacher belong = teacherMapper.selectOne(belongLambdaQueryWrapper);
+            if (belong == null) {
+                commentPageDto.setBelongName("用户不存在");
+            } else {
+                commentPageDto.setBelongName(belong.getName());
             }
-            commentPageDto.setBelongName(belongTeacher.getName());
 
             LambdaQueryWrapper<Teacher> sendLambdaQueryWrapper = new LambdaQueryWrapper<>();
             sendLambdaQueryWrapper.eq(Teacher::getId, comment.getSend());
-            Teacher sendTeacher = teacherMapper.selectOne(sendLambdaQueryWrapper);
-            if (sendTeacher == null) {
-                throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS));
+            Teacher send = teacherMapper.selectOne(sendLambdaQueryWrapper);
+            if (send == null) {
+                commentPageDto.setSendName("用户不存在");
+            } else {
+                commentPageDto.setSendName(send.getName());
             }
-            commentPageDto.setSendName(sendTeacher.getName());
 
-            LambdaQueryWrapper<Resource> resourceLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            resourceLambdaQueryWrapper.eq(Resource::getId, comment.getResource());
-            Resource resource = resourceMapper.selectOne(resourceLambdaQueryWrapper);
-            if (resource == null) {
-                throw new CustomizeReturnException(R.failure(RCodeEnum.TEACHER_NOT_EXISTS));
+            if (comment.getResource() != 0) {
+                Resource resource = resourceMapper.selectById(comment.getResource());
+                if (resource == null) {
+                    commentPageDto.setResourceName("教学资料不存在");
+                } else {
+                    commentPageDto.setResourceName(resource.getName());
+                }
+            } else {
+                commentPageDto.setResourceName("系统消息");
             }
-            commentPageDto.setResourceName(resource.getName());
-
             return commentPageDto;
         }).collect(Collectors.toList());
-        pageDtoList.removeIf(Objects::isNull);
-        returnResult.setTotal(pageDtoList.size());
         returnResult.setRecords(pageDtoList);
         return returnResult;
     }
@@ -390,7 +442,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         lambdaQueryWrapper
                 .eq(Comment::getSend, teacherLoginDto.getId())
                 .ne(Comment::getReadStatus, 2)
-                .orderByAsc(Comment::getCreateTime);
+                .orderByDesc(Comment::getCreateTime);
 
         this.page(page, lambdaQueryWrapper);
         BeanUtils.copyProperties(page, returnResult, "records");
@@ -399,14 +451,17 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
             if (teacher == null) {
                 return null;
             }
-            Resource resource = resourceMapper.selectById(comment.getResource());
             UserCommentPageDto userCommentPageDto = new UserCommentPageDto();
             userCommentPageDto.setId(comment.getId());
             userCommentPageDto.setCreateTime(LocalDateTime.now());
             userCommentPageDto.setBelongId(comment.getBelong());
             userCommentPageDto.setBelongName(teacher.getName());
             userCommentPageDto.setResourceId(comment.getResource());
-            userCommentPageDto.setResourceName(resource.getName());
+            if (comment.getResource() != 0) {
+                userCommentPageDto.setResourceName(resourceMapper.selectById(comment.getResource()).getName());
+            } else {
+                userCommentPageDto.setResourceName("系统消息");
+            }
             userCommentPageDto.setReadStatus(comment.getReadStatus());
             userCommentPageDto.setStatus(comment.getStatus());
             if (comment.getStatus() == 0) {
@@ -539,8 +594,13 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
             return postCommentPageDto;
         }).collect(Collectors.toList());
-        pageDtoList.removeIf(Objects::isNull);
-        returnResult.setTotal(pageDtoList.size());
+        pageDtoList.removeIf(postCommentPageDto -> {
+            if (Objects.isNull(postCommentPageDto)) {
+                returnResult.setTotal(returnResult.getTotal() - 1);
+                return true;
+            }
+            return false;
+        });
         returnResult.setRecords(pageDtoList);
         return returnResult;
     }
@@ -552,10 +612,10 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         if (teacherLoginDto == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，普通用户未登录");
         }
-
-        if (Objects.equals(postCommentAddDto.getSend(), teacherLoginDto.getId())) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED));
-        }
+        //这里允许用户在自己的帖子下进行评论
+        //if (Objects.equals(postCommentAddDto.getSend(), teacherLoginDto.getId())) {
+        //    throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED));
+        //}
 
         Teacher teacher = teacherMapper.selectById(postCommentAddDto.getSend());
         if (Objects.isNull(teacher)) {
@@ -574,8 +634,38 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         comment.setResource(postCommentAddDto.getResource());
         comment.setContent(postCommentAddDto.getContent());
         comment.setUrl(postCommentAddDto.getUrl());
+        int insertResult = commentMapper.insert(comment);
 
-        commentMapper.insert(comment);
+        // 判断数据库插入结果
+        if (insertResult == 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_ADDITION_FAILED), "添加评论失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+        }
+
+        String operate = "用户:" + teacherLoginDto.getName() + "(ID=" + teacherLoginDto.getId() + ")执行增加评论操作";
+        HashMap<String, Object> rabbitMqResult = new HashMap<>();
+        rabbitMqResult.put("operate", operate);
+        rabbitMqResult.put("object", comment);
+        rabbitMqResult.put("method", CommonConstant.CREATE_COMMENT);
+        try {
+            commentRabbitTemplate.setConfirmCallback(new RabbitTemplate.ConfirmCallback() {
+                @Override
+                public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+                    if (!ack) {
+                        throw new CustomizeReturnException(R.failure(RCodeEnum.PROVIDER_TO_EXCHANGE_ERROR));
+                    }
+                }
+            });
+            commentRabbitTemplate.setReturnsCallback(new RabbitTemplate.ReturnsCallback() {
+                @Override
+                public void returnedMessage(ReturnedMessage returnedMessage) {
+                    log.error(returnedMessage.toString());
+                    throw new CustomizeReturnException(R.failure(RCodeEnum.EXCHANGE_TO_QUEUE_ERROR));
+                }
+            });
+            commentRabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, "comment." + CommonConstant.CREATE_COMMENT, JSON.toJSONString(rabbitMqResult));
+        } catch (AmqpException exception) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.MESSAGE_QUEUE_SEND_ERROR));
+        }
     }
 
     @Override
@@ -632,9 +722,35 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 .set(Teacher::getMessageRead, teacherMapper.selectById(teacherLoginDto.getId()).getMessageRead() + 1)
                 .eq(Teacher::getId, teacherLoginDto.getId());
         int teacherUpdateResult = teacherMapper.update(null, teacherLambdaUpdateWrapper);
-        
+
         if (teacherUpdateResult == 0) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "修改教师已读数量失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+        }
+
+        String operate = "用户:" + teacherLoginDto.getName() + "(ID=" + teacherLoginDto.getId() + ")执行修改评论操作";
+        HashMap<String, Object> rabbitMqResult = new HashMap<>();
+        rabbitMqResult.put("operate", operate);
+        rabbitMqResult.put("object", commentUpdateResult);
+        rabbitMqResult.put("method", CommonConstant.UPDATE_COMMENT);
+        try {
+            commentRabbitTemplate.setConfirmCallback(new RabbitTemplate.ConfirmCallback() {
+                @Override
+                public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+                    if (!ack) {
+                        throw new CustomizeReturnException(R.failure(RCodeEnum.PROVIDER_TO_EXCHANGE_ERROR));
+                    }
+                }
+            });
+            commentRabbitTemplate.setReturnsCallback(new RabbitTemplate.ReturnsCallback() {
+                @Override
+                public void returnedMessage(ReturnedMessage returnedMessage) {
+                    log.error(returnedMessage.toString());
+                    throw new CustomizeReturnException(R.failure(RCodeEnum.EXCHANGE_TO_QUEUE_ERROR));
+                }
+            });
+            commentRabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, "comment." + CommonConstant.UPDATE_COMMENT, JSON.toJSONString(rabbitMqResult));
+        } catch (AmqpException exception) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.MESSAGE_QUEUE_SEND_ERROR));
         }
     }
 }

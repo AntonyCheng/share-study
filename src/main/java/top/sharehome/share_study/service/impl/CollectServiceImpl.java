@@ -17,15 +17,16 @@ import top.sharehome.share_study.mapper.CollectMapper;
 import top.sharehome.share_study.mapper.CollegeMapper;
 import top.sharehome.share_study.mapper.ResourceMapper;
 import top.sharehome.share_study.mapper.TeacherMapper;
-import top.sharehome.share_study.model.dto.TeacherLoginDto;
-import top.sharehome.share_study.model.dto.UserCollectPageDto;
+import top.sharehome.share_study.model.dto.teacher.TeacherLoginDto;
+import top.sharehome.share_study.model.dto.user.UserCollectPageDto;
 import top.sharehome.share_study.model.entity.Collect;
 import top.sharehome.share_study.model.entity.College;
 import top.sharehome.share_study.model.entity.Resource;
 import top.sharehome.share_study.model.entity.Teacher;
-import top.sharehome.share_study.model.vo.PostCollectUpdateVo;
-import top.sharehome.share_study.model.vo.UserCollectPageVo;
+import top.sharehome.share_study.model.vo.post.PostCollectUpdateVo;
+import top.sharehome.share_study.model.vo.user.UserCollectPageVo;
 import top.sharehome.share_study.service.CollectService;
+import top.sharehome.share_study.utils.object.ObjectDataUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -60,12 +61,15 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
         LambdaQueryWrapper<Collect> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper
                 .eq(Collect::getBelong, id)
-                .orderByAsc(Collect::getCreateTime);
+                .orderByDesc(Collect::getCreateTime);
 
-        if (userCollectPageVo == null) {
+        if (ObjectDataUtil.isAllObjectDataEmpty(userCollectPageVo)) {
             this.page(page, lambdaQueryWrapper);
             BeanUtils.copyProperties(page, returnResult, "records");
             List<UserCollectPageDto> pageDtoList = page.getRecords().stream().map(collect -> {
+                if (collect.getStatus() == 1) {
+                    return null;
+                }
                 Resource resource = resourceMapper.selectById(collect.getResource());
                 Integer status = resource.getStatus();
                 if (!Objects.equals(teacherLoginDto.getId(), id) && status == 1) {
@@ -98,8 +102,13 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
 
                 return userCollectPageDto;
             }).collect(Collectors.toList());
-            pageDtoList.removeIf(Objects::isNull);
-            returnResult.setTotal(pageDtoList.size());
+            pageDtoList.removeIf(userCollectPageDto -> {
+                if (Objects.isNull(userCollectPageDto)) {
+                    returnResult.setTotal(returnResult.getTotal() - 1);
+                    return true;
+                }
+                return false;
+            });
             returnResult.setRecords(pageDtoList);
             return returnResult;
         }
@@ -111,6 +120,9 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
         this.page(page, lambdaQueryWrapper);
         BeanUtils.copyProperties(page, returnResult, "records");
         List<UserCollectPageDto> pageDtoList = page.getRecords().stream().map(collect -> {
+            if (collect.getStatus() == 1) {
+                return null;
+            }
             Resource resource = resourceMapper.selectById(collect.getResource());
             Integer status = resource.getStatus();
             if (!Objects.equals(teacherLoginDto.getId(), id) && status == 1) {
@@ -143,8 +155,13 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
 
             return userCollectPageDto;
         }).collect(Collectors.toList());
-        pageDtoList.removeIf(Objects::isNull);
-        returnResult.setTotal(pageDtoList.size());
+        pageDtoList.removeIf(userCollectPageDto -> {
+            if (Objects.isNull(userCollectPageDto)) {
+                returnResult.setTotal(returnResult.getTotal() - 1);
+                return true;
+            }
+            return false;
+        });
         returnResult.setRecords(pageDtoList);
         return returnResult;
     }
@@ -153,9 +170,6 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
     @Transactional(rollbackFor = CustomizeTransactionException.class)
     public void deleteUserCollect(Long id, HttpServletRequest request) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.USER_LOGIN_STATE);
-        if (teacherLoginDto == null) {
-            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "用户未登录");
-        }
         if (!Objects.equals(teacherLoginDto.getId(), collectMapper.selectById(id).getBelong())) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.ACCESS_UNAUTHORIZED), "不能在用户详情界面删除其他用户的收藏");
         }
@@ -202,7 +216,6 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
         if (teacherLoginDto == null) {
             throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "用户未登录");
         }
-
         LambdaQueryWrapper<Collect> collectLambdaQueryWrapper = new LambdaQueryWrapper<>();
         collectLambdaQueryWrapper.eq(Collect::getBelong, teacherLoginDto.getId());
         List<Collect> collectList = collectMapper.selectList(collectLambdaQueryWrapper);
