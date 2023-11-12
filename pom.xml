@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>top.sharehome</groupId>
-    <artifactId>share_study</artifactId>
+    <artifactId>share-study</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>share_study</name>
-    <description>share_study</description>
+    <name>share-study</name>
+    <description>share-study</description>
     <properties>
         <java.version>1.8</java.version>
     </properties>
