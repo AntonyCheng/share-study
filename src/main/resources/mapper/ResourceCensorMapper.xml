@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.sharehome.share_study.mapper.ResourceCensorMapper">
+    <resultMap id="BaseResultMap" type="top.sharehome.share_study.model.entity.ResourceCensor">
+        <!--@mbg.generated-->
+        <!--@Table share_study.t_resource_censor-->
+        <id column="censor_id" jdbcType="BIGINT" property="id"/>
+        <result column="resource_belong" jdbcType="BIGINT" property="belong"/>
+        <result column="resource_name" jdbcType="VARCHAR" property="name"/>
+        <result column="resource_info" jdbcType="VARCHAR" property="info"/>
+        <result column="resource_url" jdbcType="VARCHAR" property="url"/>
+        <result column="censor_admin_1_id" jdbcType="BIGINT" property="censorAdmin1Id"/>
+        <result column="censor_admin_1_name" jdbcType="VARCHAR" property="censorAdmin1Name"/>
+        <result column="censor_admin_1_result" jdbcType="TINYINT" property="censorAdmin1Result"/>
+        <result column="censor_admin_2_id" jdbcType="BIGINT" property="censorAdmin2Id"/>
+        <result column="censor_admin_2_name" jdbcType="VARCHAR" property="censorAdmin2Name"/>
+        <result column="censor_admin_2_result" jdbcType="TINYINT" property="censorAdmin2Result"/>
+        <result column="censor_admin_3_id" jdbcType="BIGINT" property="censorAdmin3Id"/>
+        <result column="censor_admin_3_name" jdbcType="VARCHAR" property="censorAdmin3Name"/>
+        <result column="censor_admin_3_result" jdbcType="TINYINT" property="censorAdmin3Result"/>
+        <result column="censor_status" jdbcType="INTEGER" property="status"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+        <result column="is_deleted" jdbcType="TINYINT" property="isDeleted"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        <!--@mbg.generated-->
+        censor_id,
+        resource_belong,
+        resource_name,
+        resource_info,
+        resource_url,
+        censor_admin_1_id,
+        censor_admin_1_name,
+        censor_admin_1_result,
+        censor_admin_2_id,
+        censor_admin_2_name,
+        censor_admin_2_result,
+        censor_admin_3_id,
+        censor_admin_3_name,
+        censor_admin_3_result,
+        censor_status,
+        create_time,
+        update_time,
+        is_deleted
+    </sql>
+</mapper>
