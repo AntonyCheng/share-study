@@ -829,6 +829,26 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
 
     @Override
     @Transactional(rollbackFor = CustomizeTransactionException.class)
+    public void resetPwdById(Long id, HttpServletRequest request) {
+        TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
+        if (teacherLoginDto == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.NOT_LOGIN), "登录状态为空，管理员未登录");
+        }
+
+        Teacher teacher = teacherMapper.selectById(id);
+        if (teacher == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.USER_ACCOUNT_DOES_NOT_EXIST), "用户后台无数据");
+        }
+        teacher.setPassword(DigestUtil.md5Hex("123456" + SALT));
+        int updateResult = teacherMapper.updateById(teacher);
+        // 判断数据库插入结果
+        if (updateResult == 0) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.DATA_MODIFICATION_FAILED), "修改用户失败，从数据库返回的影响行数为0，且在之前没有报出异常");
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = CustomizeTransactionException.class)
     public Page<AdminPageDto> pageAdmin(Integer current, Integer pageSize, HttpServletRequest request, AdminPageVo adminPageVo) {
         TeacherLoginDto teacherLoginDto = (TeacherLoginDto) request.getSession().getAttribute(CommonConstant.ADMIN_LOGIN_STATE);
         if (teacherLoginDto == null) {

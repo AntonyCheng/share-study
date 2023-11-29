@@ -187,4 +187,12 @@ public interface TeacherService extends IService<Teacher> {
      * @param request              获取Session中的登录状态
      */
     void updateUserSelf(UserUpdateInfoSelfVo userUpdateInfoSelfVo, HttpServletRequest request);
+
+    /**
+     * 根据教师Id重置教师密码
+     *
+     * @param id      教师用户ID
+     * @param request 获取Session中登录状态
+     */
+    void resetPwdById(Long id, HttpServletRequest request);
 }

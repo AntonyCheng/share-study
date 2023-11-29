@@ -17,10 +17,7 @@ import top.sharehome.share_study.common.response.RCodeEnum;
 import top.sharehome.share_study.model.dto.teacher.TeacherGetDto;
 import top.sharehome.share_study.model.dto.teacher.TeacherLoginDto;
 import top.sharehome.share_study.model.dto.teacher.TeacherPageDto;
-import top.sharehome.share_study.model.vo.teacher.TeacherLoginVo;
-import top.sharehome.share_study.model.vo.teacher.TeacherPageVo;
-import top.sharehome.share_study.model.vo.teacher.TeacherRegisterVo;
-import top.sharehome.share_study.model.vo.teacher.TeacherUpdateVo;
+import top.sharehome.share_study.model.vo.teacher.*;
 import top.sharehome.share_study.service.TeacherCensorService;
 import top.sharehome.share_study.service.TeacherService;
 
@@ -340,5 +337,27 @@ public class TeacherController {
         Page<TeacherPageDto> page = teacherService.pageTeacher(current, pageSize, teacherPageVo);
 
         return R.success(page, "分页查询成功");
+    }
+
+    /**
+     * 根据教师Id重置教师密码
+     *
+     * @param teacherResetPwdVo 重置教师密码Vo对象
+     * @return 返回重置密码结果
+     */
+    @PutMapping("/resetPwd")
+    @ApiOperation("根据教师Id重置教师密码")
+    public R<String> resetPwdById(@RequestBody TeacherResetPwdVo teacherResetPwdVo, HttpServletRequest request) {
+        if (teacherResetPwdVo == null) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
+        }
+
+        if (ObjectUtils.isEmpty(teacherResetPwdVo.getId())) {
+            throw new CustomizeReturnException(R.failure(RCodeEnum.REQUEST_REQUIRED_PARAMETER_IS_EMPTY));
+        }
+
+        teacherService.resetPwdById(teacherResetPwdVo.getId(),request);
+
+        return R.success("重置密码成功");
     }
 }
