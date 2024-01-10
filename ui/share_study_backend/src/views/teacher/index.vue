@@ -117,10 +117,10 @@ export default {
   data() {
     return {
       tableTeacherCol: [
-        // {
-        //   prop: "id",
-        //   label: "用户ID",
-        // },
+        {
+          prop: 'account',
+          label: '用户名'
+        },
         {
           prop: 'name',
           label: '老师姓名'
@@ -189,6 +189,13 @@ export default {
       total: 10
     }
   },
+  computed: {
+    userInfo: () => {
+      const token = getToken()
+      const data = JSON.parse(token)
+      return data
+    }
+  },
   created() {
     if (this.tableTeacherData) {
       this.getTeacherPage(this.currentPage, this.pageSize)
@@ -201,13 +208,6 @@ export default {
     })
   },
   mounted() { },
-  computed: {
-    userInfo: () => {
-      const token = getToken()
-      const data = JSON.parse(token)
-      return data
-    }
-  },
   methods: {
     /* 请求数据 */
     // 管理员分页查询
@@ -343,7 +343,7 @@ export default {
       // 获取id
       console.log(index, row)
       const id = row.id
-      this.$confirm('此操作将重置改用户密码, 是否继续?', '提示', {
+      this.$confirm('此操作将重置用户密码为：123456, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
